@@ -56,3 +56,11 @@ Food > Text is a table: name, carbs and protein (required), fat and fiber (optio
 ## Dose formula editor
 
 Manage > menu > Dose formulas edits B(t) = x·c(t) + y·p(t) + z·f(t), the impact on blood glucose t minutes after eating. One row per nutrient: constant (x, y, z, any value), time function (constant, linear rise or decay, logarithmic rise or decay over a span in minutes), and an optional × G(t) multiplier using the glucose level. The carbohydrate row also chooses how fiber counts (total carbs, net with fiber ÷ 2, or net with all fiber). The formula is saved on the device and previewed for the accepted food. It is not yet used for the forecast or the footer's bolus values; the constants start at 0, so nothing is suggested until you set them.
+
+## Insulin profiles and service connections
+
+Manage toolbar menu:
+
+- **Insulin profiles**: one Main profile plus any number of alternatives (for example "Sick"). Each profile has time frames (6am-11am, 11am-4pm, ...), each with basal (units/hour) and sensitivity (mg/dL one unit lowers glucose). Alternatives are selected by hand with Use / Back to main and stay in effect until changed. `ProfileSwitchHook` is the extension point for automatic switching; none are registered, and a manual choice is never overridden by a hook. No default values are supplied.
+- **Service connections**: connection details only, no data format. A service has a name, https address and one of: none, shared secret in a header (Nightscout preset: `api-secret`, optionally SHA-1 hashed), bearer token, or a client certificate for mutual TLS (import a `.p12`). Secrets and certificates are stored in the Keychain.
+- **Apple Health** (read only): pulse rate, sleep and heart rate variability. This needs the HealthKit capability on the App ID and provisioning profile (`Sources/MFS.entitlements`).

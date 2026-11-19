@@ -25,6 +25,8 @@ private enum MFSSection: String, CaseIterable, Identifiable {
 @main
 struct MFSApp: App {
     @StateObject private var foodStore = AcceptedFoodStore()
+    @StateObject private var profileStore = InsulinProfileStore()
+    @StateObject private var serviceStore = ServiceConnectionStore()
     @StateObject private var formulaStore = DoseFormulaStore()
     @StateObject private var glucoseFeed: GlucoseFeed
     private let cgmHost: AnyObject?
@@ -96,6 +98,8 @@ struct MFSApp: App {
             .preferredColorScheme(.light)
             .environmentObject(foodStore)
             .environmentObject(formulaStore)
+            .environmentObject(profileStore)
+            .environmentObject(serviceStore)
             .environmentObject(glucoseFeed)
             .environmentObject(deviceActions)
             .onAppear { fetchGlucose() }
@@ -163,6 +167,8 @@ private struct ManageView: View {
     @EnvironmentObject private var store: AcceptedFoodStore
     @State private var showDevices = false
     @State private var showFormula = false
+    @State private var showProfiles = false
+    @State private var showServices = false
 
     var body: some View {
         List {
@@ -209,6 +215,8 @@ private struct ManageView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Connect devices") { showDevices = true }
+                    Button("Insulin profiles") { showProfiles = true }
+                    Button("Service connections") { showServices = true }
                     Button("Dose formulas") { showFormula = true }
                     Button("Safety limits") {}.disabled(true)
                 } label: {
@@ -218,6 +226,8 @@ private struct ManageView: View {
         }
         .sheet(isPresented: $showDevices) { ConnectDevicesView() }
         .sheet(isPresented: $showFormula) { DoseFormulaView() }
+        .sheet(isPresented: $showProfiles) { InsulinProfilesView() }
+        .sheet(isPresented: $showServices) { ServiceConnectionsView() }
     }
 }
 

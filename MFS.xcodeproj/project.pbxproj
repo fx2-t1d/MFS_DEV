@@ -6,6 +6,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A10000000000000000000101 /* InsulinProfiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000100 /* InsulinProfiles.swift */; };
+		A10000000000000000000102 /* InsulinProfiles.swift in MFSTests Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000100 /* InsulinProfiles.swift */; };
+		A10000000000000000000104 /* ServiceConnections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000103 /* ServiceConnections.swift */; };
+		A10000000000000000000105 /* ServiceConnections.swift in MFSTests Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000103 /* ServiceConnections.swift */; };
+		A10000000000000000000107 /* InsulinProfilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000106 /* InsulinProfilesView.swift */; };
+		A10000000000000000000109 /* ServiceConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000108 /* ServiceConnectionsView.swift */; };
+		A10000000000000000000110 /* ProfileAndServiceTests.swift in MFSTests Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000111 /* ProfileAndServiceTests.swift */; };
 		B10000000000000000000101 /* LoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* LoopKit.framework */; };
 		B10000000000000000000201 /* LoopKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* LoopKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B10000000000000000000102 /* LoopKitUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* LoopKitUI.framework */; };
@@ -56,6 +63,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A10000000000000000000100 /* InsulinProfiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/InsulinProfiles.swift; sourceTree = "<group>"; };
+		A10000000000000000000103 /* ServiceConnections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ServiceConnections.swift; sourceTree = "<group>"; };
+		A10000000000000000000106 /* InsulinProfilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/InsulinProfilesView.swift; sourceTree = "<group>"; };
+		A10000000000000000000108 /* ServiceConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/ServiceConnectionsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000111 /* ProfileAndServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileAndServiceTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000112 /* MFS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Sources/MFS.entitlements; sourceTree = "<group>"; };
 		B10000000000000000000001 /* LoopKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LoopKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000002 /* LoopKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LoopKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B10000000000000000000003 /* G7SensorKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = G7SensorKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,7 +112,7 @@
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000004 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000101 /* LoopKit.framework in Frameworks */, B10000000000000000000102 /* LoopKitUI.framework in Frameworks */, B10000000000000000000103 /* G7SensorKit.framework in Frameworks */, B10000000000000000000104 /* OmnipodKit.framework in Frameworks */, B10000000000000000000105 /* RileyLinkBLEKit.framework in Frameworks */, B10000000000000000000106 /* RileyLinkKit.framework in Frameworks */, B10000000000000000000107 /* RileyLinkKitUI.framework in Frameworks */, B10000000000000000000108 /* MockKit.framework in Frameworks */, B10000000000000000000109 /* LoopTestingKit.framework in Frameworks */, A10000000000000000000035 /* SwiftCharts in Frameworks */, ); runOnlyForDeploymentPostprocessing = 0; };
 		A10000000000000000000018 /* MFSTests Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000029 /* XCTest.framework in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
-		A10000000000000000000019 /* MFSTests Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000011 /* NutritionScanCaptureTests.swift in Sources */, A10000000000000000000031 /* NutritionScanning.swift in MFSTests Sources */, A10000000000000000000047 /* DeviceStateStore.swift in MFSTests Sources */, A10000000000000000000048 /* DeviceStateStoreTests.swift in Sources */, A10000000000000000000055 /* GlucoseForecast.swift in MFSTests Sources */, A10000000000000000000056 /* GlucoseForecastTests.swift in Sources */, A10000000000000000000094 /* InsulinTableTests.swift in MFSTests Sources */, A10000000000000000000092 /* InsulinTypes.swift in MFSTests Sources */, A10000000000000000000088 /* DoseFormulaTests.swift in MFSTests Sources */, A10000000000000000000082 /* DoseFormula.swift in MFSTests Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000019 /* MFSTests Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000011 /* NutritionScanCaptureTests.swift in Sources */, A10000000000000000000031 /* NutritionScanning.swift in MFSTests Sources */, A10000000000000000000047 /* DeviceStateStore.swift in MFSTests Sources */, A10000000000000000000048 /* DeviceStateStoreTests.swift in Sources */, A10000000000000000000055 /* GlucoseForecast.swift in MFSTests Sources */, A10000000000000000000056 /* GlucoseForecastTests.swift in Sources */, A10000000000000000000102 /* InsulinProfiles.swift in MFSTests Sources */, A10000000000000000000105 /* ServiceConnections.swift in MFSTests Sources */, A10000000000000000000110 /* ProfileAndServiceTests.swift in MFSTests Sources */, A10000000000000000000094 /* InsulinTableTests.swift in MFSTests Sources */, A10000000000000000000092 /* InsulinTypes.swift in MFSTests Sources */, A10000000000000000000088 /* DoseFormulaTests.swift in MFSTests Sources */, A10000000000000000000082 /* DoseFormula.swift in MFSTests Sources */,); runOnlyForDeploymentPostprocessing = 0; };
 		A10000000000000000000020 /* MFSTests Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000012 /* IMG_0270.HEIC in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
 		A10000000000000000000034 /* MFS Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000032 /* Assets.xcassets in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
@@ -122,6 +135,11 @@
 				A10000000000000000000085 /* ManualFoodView.swift */,
 				A10000000000000000000083 /* DoseFormulaView.swift */,
 				A10000000000000000000080 /* DoseFormula.swift */,
+				A10000000000000000000100 /* InsulinProfiles.swift */,
+				A10000000000000000000103 /* ServiceConnections.swift */,
+				A10000000000000000000106 /* InsulinProfilesView.swift */,
+				A10000000000000000000108 /* ServiceConnectionsView.swift */,
+				A10000000000000000000112 /* MFS.entitlements */,
 				A10000000000000000000071 /* OmnipodPairing.swift */,
 				A10000000000000000000033 /* Assets.xcassets */,
 				A10000000000000000000016 /* MFSTests */, 
@@ -145,6 +163,7 @@
 				A10000000000000000000013 /* NutritionScanCaptureTests.swift */,
 				A10000000000000000000043 /* DeviceStateStoreTests.swift */,
 				A10000000000000000000052 /* GlucoseForecastTests.swift */,
+				A10000000000000000000111 /* ProfileAndServiceTests.swift */,
 				A10000000000000000000093 /* InsulinTableTests.swift */,
 				A10000000000000000000087 /* DoseFormulaTests.swift */,
 				A10000000000000000000014 /* IMG_0270.HEIC */,
@@ -250,7 +269,7 @@
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* Begin PBXSourcesBuildPhase section */
-		A10000000000000000000009 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* MFSApp.swift in Sources */, A10000000000000000000010 /* NutritionScanning.swift in Sources */, A10000000000000000000044 /* DeviceStateStore.swift in Sources */, A10000000000000000000045 /* G7GlucoseHost.swift in Sources */, A10000000000000000000060 /* GlucoseFeed.swift in Sources */, A10000000000000000000061 /* CGMHostBase.swift in Sources */, A10000000000000000000062 /* MockGlucoseHost.swift in Sources */,  A10000000000000000000046 /* OmnipodHistoryReader.swift in Sources */, A10000000000000000000091 /* InsulinTypes.swift in Sources */, A10000000000000000000086 /* ManualFoodView.swift in Sources */, A10000000000000000000084 /* DoseFormulaView.swift in Sources */, A10000000000000000000081 /* DoseFormula.swift in Sources */, A10000000000000000000070 /* OmnipodPairing.swift in Sources */, A10000000000000000000053 /* GlucoseForecast.swift in Sources */, A10000000000000000000054 /* GlucoseView.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000009 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* MFSApp.swift in Sources */, A10000000000000000000010 /* NutritionScanning.swift in Sources */, A10000000000000000000044 /* DeviceStateStore.swift in Sources */, A10000000000000000000045 /* G7GlucoseHost.swift in Sources */, A10000000000000000000060 /* GlucoseFeed.swift in Sources */, A10000000000000000000061 /* CGMHostBase.swift in Sources */, A10000000000000000000062 /* MockGlucoseHost.swift in Sources */,  A10000000000000000000046 /* OmnipodHistoryReader.swift in Sources */, A10000000000000000000101 /* InsulinProfiles.swift in Sources */, A10000000000000000000104 /* ServiceConnections.swift in Sources */, A10000000000000000000107 /* InsulinProfilesView.swift in Sources */, A10000000000000000000109 /* ServiceConnectionsView.swift in Sources */, A10000000000000000000091 /* InsulinTypes.swift in Sources */, A10000000000000000000086 /* ManualFoodView.swift in Sources */, A10000000000000000000084 /* DoseFormulaView.swift in Sources */, A10000000000000000000081 /* DoseFormula.swift in Sources */, A10000000000000000000070 /* OmnipodPairing.swift in Sources */, A10000000000000000000053 /* GlucoseForecast.swift in Sources */, A10000000000000000000054 /* GlucoseView.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 		A10000000000000000000024 /* PBXContainerItemProxy */ = {
@@ -302,6 +321,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = MFS;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Use the camera to scan food product barcodes and photograph meals.";
+				CODE_SIGN_ENTITLEMENTS = Sources/MFS.entitlements;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Read pulse rate, sleep and heart rate variability from Apple Health.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Use Bluetooth to read glucose from your Dexcom G7 sensor.";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
@@ -358,6 +379,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = MFS;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Use the camera to scan food product barcodes and photograph meals.";
+				CODE_SIGN_ENTITLEMENTS = Sources/MFS.entitlements;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Read pulse rate, sleep and heart rate variability from Apple Health.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Use Bluetooth to read glucose from your Dexcom G7 sensor.";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", );
