@@ -1,0 +1,15 @@
+diff --git a/G7SensorKit/G7CGMManager/G7Sensor.swift b/G7SensorKit/G7CGMManager/G7Sensor.swift
+index 9935827..b333d8a 100644
+--- a/G7SensorKit/G7CGMManager/G7Sensor.swift
++++ b/G7SensorKit/G7CGMManager/G7Sensor.swift
+@@ -252,8 +252,8 @@ public final class G7Sensor: G7BluetoothManagerDelegate {
+         }
+ 
+         /// The Dexcom G7 advertises a peripheral name of "DXCMxx", and later reports a full name of "Dexcomxx"
+-        /// Dexcom One+ peripheral name start with "DX02"
+-        if name.hasPrefix("DXCM") || name.hasPrefix("DX02"){
++        /// Dexcom One+ peripheral name start with "DX02"; Dexcom Stelo starts with "DX01"
++        if name.hasPrefix("DXCM") || name.hasPrefix("DX02") || name.hasPrefix("DX01") {
+             // If we're following this name or if we're scanning, connect
+             if let sensorName = sensorID, name.suffix(2) == sensorName.suffix(2) {
+                 return .makeActive

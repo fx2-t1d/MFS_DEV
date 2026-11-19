@@ -25,6 +25,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Apply submodule patches
+        run: ./scripts/apply_patches.sh
+
       - name: Select Xcode version
         run: |
           sudo xcode-select --switch /Applications/Xcode_${{ vars.XCODE_VERSION || '26.3' }}.app/Contents/Developer

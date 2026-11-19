@@ -55,7 +55,7 @@ struct MFSApp: App {
             cgmHost = host
             g7Host = host
             fetchGlucose = { host.fetchNewData() }
-            sourceName = "Dexcom G7"
+            sourceName = "Dexcom G7 / Stelo"
         }
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
             omnipodReader = OmnipodHistoryReader()
@@ -260,7 +260,7 @@ private struct G7Section: View {
     @State private var confirmRepair = false
 
     var body: some View {
-        Section("Dexcom G7") {
+        Section("Dexcom G7 / Stelo") {
             switch host.pairing {
             case .notPaired:
                 LabeledContent("Status", value: "Not paired")
@@ -275,7 +275,12 @@ private struct G7Section: View {
                 instructions
                 Button("Search again") { host.startPairing() }
             case let .paired(name, lifecycle):
-                LabeledContent("Sensor", value: name)
+                LabeledContent("Sensor", value: isStelo(name) ? "Dexcom Stelo (\(name))" : name)
+                if isStelo(name) {
+                    Text("Stelo does not send glucose alerts through MFS; use the Stelo app for alerts.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
                 LabeledContent("Status", value: statusText(lifecycle))
                 if let expires = host.sensorExpiresAt {
                     LabeledContent("Expires", value: expires.formatted(date: .abbreviated, time: .shortened))
@@ -294,8 +299,10 @@ private struct G7Section: View {
         }
     }
 
+    private func isStelo(_ name: String) -> Bool { name.hasPrefix("DX01") }
+
     private var instructions: some View {
-        Text("Keep Bluetooth on and this phone next to the sensor. Insert a new G7 sensor and let it start; it is picked up automatically when it begins advertising, so no code is needed. Close the Dexcom app first if it is running so it does not take the sensor.")
+        Text("Keep Bluetooth on and this phone next to the sensor. Start a new G7, ONE+ or Stelo sensor; it is picked up automatically when it begins advertising, so no code is needed. Close the Dexcom app first if it is running so it does not take the sensor.")
             .font(.footnote)
             .foregroundStyle(.secondary)
     }
