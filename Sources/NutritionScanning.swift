@@ -324,6 +324,7 @@ struct AcceptedFood: Identifiable {
     let id = UUID()
     let product: OpenFoodFactsProduct
     let servings: Double
+    var photoJPEG: Data? = nil
     let acceptedAt = Date()
 
     var totalCarbohydrates: Double? {
@@ -336,6 +337,8 @@ struct AcceptedFood: Identifiable {
     }
 
     var totalProtein: Double? { consumedAmount(of: .protein) }
+
+    var totalFiber: Double? { consumedAmount(of: .fiber) }
 
     var totalFat: Double? { consumedAmount(of: .totalFat) }
 
