@@ -38,6 +38,7 @@ struct MFSApp: App {
         let feed = GlucoseFeed()
         _glucoseFeed = StateObject(wrappedValue: feed)
         let sourceName: String
+        var g7Host: G7GlucoseHost?
         // Like LoopKit's example host, don't start device managers when hosting XCTest.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             cgmHost = nil
@@ -51,11 +52,12 @@ struct MFSApp: App {
         } else {
             let host = G7GlucoseHost(feed: feed)
             cgmHost = host
+            g7Host = host
             fetchGlucose = { host.fetchNewData() }
             sourceName = "Dexcom G7"
         }
         let fetch = fetchGlucose
-        _deviceActions = StateObject(wrappedValue: DeviceActions(sourceName: sourceName, refreshGlucose: fetch))
+        _deviceActions = StateObject(wrappedValue: DeviceActions(sourceName: sourceName, g7: g7Host, refreshGlucose: fetch))
     }
 
     var body: some Scene {
@@ -199,37 +201,32 @@ private struct ManageView: View {
 final class DeviceActions: ObservableObject {
     let sourceName: String
     let refreshGlucose: () -> Void
+    /// nil when the real G7 host is not running (tests, mock CGM).
+    let g7: G7GlucoseHost?
 
-    init(sourceName: String, refreshGlucose: @escaping () -> Void) {
+    init(sourceName: String, g7: G7GlucoseHost? = nil, refreshGlucose: @escaping () -> Void) {
         self.sourceName = sourceName
+        self.g7 = g7
         self.refreshGlucose = refreshGlucose
     }
 }
 
 private struct ConnectDevicesView: View {
-    @EnvironmentObject private var feed: GlucoseFeed
     @EnvironmentObject private var actions: DeviceActions
     @Environment(\.dismiss) private var dismiss
-
-    private var latest: GlucoseReading? { feed.readings.last }
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Dexcom G7") {
-                    LabeledContent("Source", value: actions.sourceName)
-                    if let latest {
-                        LabeledContent("Status", value: "Receiving")
-                        LabeledContent("Last reading") {
-                            Text("\(Int(latest.milligramsPerDeciliter.rounded())) mg/dL, \(latest.date.formatted(date: .omitted, time: .shortened))")
-                        }
-                    } else {
-                        LabeledContent("Status", value: "Waiting for first reading")
-                        Text("Start your G7 sensor in the Dexcom app or with its applicator, keep this phone nearby and Bluetooth on. Readings appear within about 5 minutes.")
+                if let g7 = actions.g7 {
+                    G7Section(host: g7, refresh: actions.refreshGlucose)
+                } else {
+                    Section("Dexcom G7") {
+                        LabeledContent("Source", value: actions.sourceName)
+                        Text("Pairing is unavailable with this glucose source.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
-                    Button("Check for new readings") { actions.refreshGlucose() }
                 }
                 Section("Omnipod DASH") {
                     LabeledContent("Status", value: "Not available yet")
@@ -244,6 +241,67 @@ private struct ConnectDevicesView: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
+    }
+}
+
+private struct G7Section: View {
+    @ObservedObject var host: G7GlucoseHost
+    @EnvironmentObject private var feed: GlucoseFeed
+    let refresh: () -> Void
+    @State private var confirmRepair = false
+
+    var body: some View {
+        Section("Dexcom G7") {
+            switch host.pairing {
+            case .notPaired:
+                LabeledContent("Status", value: "Not paired")
+                instructions
+                Button("Pair a new sensor") { host.startPairing() }
+            case .searching:
+                HStack {
+                    Text("Searching for a sensor")
+                    Spacer()
+                    ProgressView()
+                }
+                instructions
+                Button("Search again") { host.startPairing() }
+            case let .paired(name, lifecycle):
+                LabeledContent("Sensor", value: name)
+                LabeledContent("Status", value: statusText(lifecycle))
+                if let expires = host.sensorExpiresAt {
+                    LabeledContent("Expires", value: expires.formatted(date: .abbreviated, time: .shortened))
+                }
+                if let latest = feed.readings.last {
+                    LabeledContent("Last reading") {
+                        Text("\(Int(latest.milligramsPerDeciliter.rounded())) mg/dL, \(latest.date.formatted(date: .omitted, time: .shortened))")
+                    }
+                }
+                Button("Check for new readings", action: refresh)
+                Button("Pair a different sensor", role: .destructive) { confirmRepair = true }
+            }
+        }
+        .confirmationDialog("Forget this sensor and search for a new one?", isPresented: $confirmRepair, titleVisibility: .visible) {
+            Button("Forget and search", role: .destructive) { host.startPairing() }
+        }
+    }
+
+    private var instructions: some View {
+        Text("Keep Bluetooth on and this phone next to the sensor. Insert a new G7 sensor and let it start; it is picked up automatically when it begins advertising, so no code is needed. Close the Dexcom app first if it is running so it does not take the sensor.")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    private func statusText(_ lifecycle: G7SensorLifecycleState) -> String {
+        let base: String
+        switch lifecycle {
+        case .searching: base = "Searching"
+        case .warmup: base = "Warming up"
+        case .ok: base = "Active"
+        case .failed: base = "Sensor failed"
+        case .gracePeriod: base = "Grace period"
+        case .expired: base = "Expired"
+        }
+        return host.isConnected ? base + ", connected" : base
     }
 }
 
