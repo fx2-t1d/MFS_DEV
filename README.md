@@ -51,7 +51,7 @@ Connect devices can pair a new Omnipod DASH. This is the one exception to MFS be
 
 ## Text food entry
 
-Food > Text is a one-row table: name, carbs and protein (required), fat and fiber (optional), all in grams for the whole meal, plus an optional photo from the camera. Accept sends it to Manage like a scan (the photo stays on the device and is shown there).
+Food > Text is a table: name, carbs and protein (required), fat and fiber (optional), in grams. Use Add row for more foods (swipe to delete). Each row has a Per serving checkbox: unchecked means grams for the whole amount eaten; checked means grams in one serving and the number of servings is required. An optional camera photo attaches to the first row. Accept sends every row to Manage like a scan (the photo stays on the device and is shown there).
 
 ## Dose formula editor
 

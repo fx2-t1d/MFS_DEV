@@ -1,14 +1,23 @@
 import SwiftUI
 import UIKit
 
-/// Typed-in food: a one-row table with an optional photo. Entered grams are for the whole meal.
+/// Typed-in food: a table of rows with an optional photo. Each row is a whole-meal amount or per serving.
 struct ManualFoodView: View {
     @EnvironmentObject private var foodStore: AcceptedFoodStore
-    @State private var name = ""
-    @State private var carbs = ""
-    @State private var protein = ""
-    @State private var fat = ""
-    @State private var fiber = ""
+    private struct Row: Identifiable {
+        let id = UUID()
+        var name = ""
+        var carbs = ""
+        var protein = ""
+        var fat = ""
+        var fiber = ""
+        var perServing = false
+        var servings = ""
+
+        var isBlank: Bool { name.isEmpty && carbs.isEmpty && protein.isEmpty && fat.isEmpty && fiber.isEmpty && servings.isEmpty }
+    }
+
+    @State private var rows = [Row()]
     @State private var photo: UIImage?
     @State private var showCamera = false
 
@@ -23,30 +32,60 @@ struct ManualFoodView: View {
         return trimmed.isEmpty ? !optional : grams(text) == nil
     }
 
+    private func message(for row: Row) -> String? {
+        if row.name.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter a name." }
+        if problem(row.carbs, optional: false) || problem(row.protein, optional: false) { return "Carbs and protein are required, in grams." }
+        if problem(row.fat, optional: true) || problem(row.fiber, optional: true) { return "Fat and fiber must be numbers in grams, or empty." }
+        if let fiberGrams = grams(row.fiber), let carbGrams = grams(row.carbs), fiberGrams > carbGrams { return "Fiber cannot exceed carbs." }
+        if row.perServing, (grams(row.servings) ?? 0) <= 0 { return "Enter the number of servings." }
+        return nil
+    }
+
     private var validationMessage: String? {
-        if name.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter a name." }
-        if problem(carbs, optional: false) || problem(protein, optional: false) { return "Carbs and protein are required, in grams." }
-        if problem(fat, optional: true) || problem(fiber, optional: true) { return "Fat and fiber must be numbers in grams, or empty." }
-        if let fiberGrams = grams(fiber), let carbGrams = grams(carbs), fiberGrams > carbGrams { return "Fiber cannot exceed carbs." }
+        for (index, row) in rows.enumerated() {
+            if let text = message(for: row) { return rows.count > 1 ? "Row \(index + 1): \(text)" : text }
+        }
         return nil
     }
 
     var body: some View {
         Form {
             Section {
-                Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
-                    GridRow {
-                        header("Name"); header("Carbs (g)"); header("Protein (g)"); header("Fat (g)\noptional"); header("Fiber (g)\noptional")
+                ForEach($rows) { $row in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
+                            if row.id == rows.first?.id {
+                                GridRow {
+                                    header("Name"); header(row.perServing ? "Carbs (g)\nper serving" : "Carbs (g)"); header("Protein (g)"); header("Fat (g)\noptional"); header("Fiber (g)\noptional")
+                                }
+                            }
+                            GridRow {
+                                TextField("Food", text: $row.name).textFieldStyle(.roundedBorder)
+                                field($row.carbs); field($row.protein); field($row.fat); field($row.fiber)
+                            }
+                        }
+                        HStack {
+                            Toggle("Per serving", isOn: $row.perServing).fixedSize()
+                            if row.perServing {
+                                TextField("Servings", text: $row.servings)
+                                    .keyboardType(.decimalPad)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(maxWidth: 100)
+                                Text("servings").font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
                     }
-                    GridRow {
-                        TextField("Food", text: $name).textFieldStyle(.roundedBorder)
-                        field($carbs); field($protein); field($fat); field($fiber)
+                    .swipeActions {
+                        if rows.count > 1 {
+                            Button("Delete", role: .destructive) { rows.removeAll { $0.id == row.id } }
+                        }
                     }
                 }
+                Button("Add row", systemImage: "plus") { rows.append(Row()) }
             } header: {
-                Text("Whole meal")
+                Text("Food")
             } footer: {
-                Text("Grams for everything you will eat, not per 100 g. Carbs include fiber.")
+                Text("Unchecked: grams for everything you will eat. Per serving: grams in one serving, multiplied by the servings you enter. Carbs include fiber.")
             }
 
             Section("Photo (optional)") {
@@ -62,7 +101,7 @@ struct ManualFoodView: View {
             }
 
             Section {
-                if let message = validationMessage, !(name.isEmpty && carbs.isEmpty && protein.isEmpty) {
+                if let message = validationMessage, !rows.allSatisfy(\.isBlank) {
                     Text(message).font(.footnote).foregroundStyle(.red)
                 }
                 Button("Accept") { accept() }.disabled(validationMessage != nil)
@@ -87,16 +126,24 @@ struct ManualFoodView: View {
     }
 
     private func accept() {
-        guard validationMessage == nil, let carbGrams = grams(carbs), let proteinGrams = grams(protein) else { return }
-        var nutrients: [NutritionField: Double] = [.carbohydrates: carbGrams, .protein: proteinGrams]
-        if let fatGrams = grams(fat) { nutrients[.totalFat] = fatGrams }
-        if let fiberGrams = grams(fiber) { nutrients[.fiber] = fiberGrams }
-        // Modeled as one 100 g serving so the entered grams are the meal totals.
-        let product = OpenFoodFactsProduct(
-            barcode: "", name: name.trimmingCharacters(in: .whitespaces), brands: nil,
-            servingSize: "whole meal", nutritionValues: [:], nutrientsPer100g: nutrients,
-            servingQuantity: 100, servingUnit: "g")
-        foodStore.accept(AcceptedFood(product: product, servings: 1, photoJPEG: photo?.jpegData(compressionQuality: 0.7)))
+        guard validationMessage == nil else { return }
+        let jpeg = photo?.jpegData(compressionQuality: 0.7)
+        for (index, row) in rows.enumerated() {
+            guard let carbGrams = grams(row.carbs), let proteinGrams = grams(row.protein) else { return }
+            var nutrients: [NutritionField: Double] = [.carbohydrates: carbGrams, .protein: proteinGrams]
+            if let fatGrams = grams(row.fat) { nutrients[.totalFat] = fatGrams }
+            if let fiberGrams = grams(row.fiber) { nutrients[.fiber] = fiberGrams }
+            // Modeled as 100 g servings so the entered grams are per serving (or the meal total).
+            let product = OpenFoodFactsProduct(
+                barcode: "", name: row.name.trimmingCharacters(in: .whitespaces), brands: nil,
+                servingSize: row.perServing ? "serving" : "whole meal", nutritionValues: [:], nutrientsPer100g: nutrients,
+                servingQuantity: 100, servingUnit: "g")
+            let servings = row.perServing ? (grams(row.servings) ?? 1) : 1
+            // The photo belongs to the meal, so it is stored once, on the first row.
+            foodStore.accept(AcceptedFood(product: product, servings: servings, photoJPEG: index == 0 ? jpeg : nil))
+        }
+        rows = [Row()]
+        photo = nil
     }
 }
 
