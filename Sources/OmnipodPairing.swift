@@ -201,6 +201,7 @@ struct OmnipodSection: View {
         .sheet(isPresented: $showForm) {
             PodSetupForm(values: $values) { settings in
                 showForm = false
+                reader.connectNew()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { flow = .setup(settings) }
             }
         }

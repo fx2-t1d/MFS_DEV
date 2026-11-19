@@ -44,6 +44,18 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
         refreshSummary()
     }
 
+    var hasConnectedDevice: Bool { manager != nil }
+
+    /// Drops a stale manager (one with no active pod) so setup starts from a clean state.
+    func disconnect() {
+        manager?.pumpManagerDelegate = nil
+        manager = nil
+        store.clear()
+        podSummary = nil
+    }
+
+    func beginPairing() {}
+
     /// Takes over a manager created by OmnipodKit's setup flow.
     func adopt(_ newManager: OmniPumpManager) {
         newManager.pumpManagerDelegate = self

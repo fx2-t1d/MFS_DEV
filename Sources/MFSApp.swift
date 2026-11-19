@@ -265,7 +265,7 @@ private struct G7Section: View {
             case .notPaired:
                 LabeledContent("Status", value: "Not paired")
                 instructions
-                Button("Pair a new sensor") { host.startPairing() }
+                Button("Pair a new sensor") { host.connectNew() }
             case .searching:
                 HStack {
                     Text("Searching for a sensor")
@@ -273,7 +273,7 @@ private struct G7Section: View {
                     ProgressView()
                 }
                 instructions
-                Button("Search again") { host.startPairing() }
+                Button("Search again") { host.connectNew() }
             case let .paired(name, lifecycle):
                 LabeledContent("Sensor", value: isStelo(name) ? "Dexcom Stelo (\(name))" : name)
                 if isStelo(name) {
@@ -295,7 +295,7 @@ private struct G7Section: View {
             }
         }
         .confirmationDialog("Forget this sensor and search for a new one?", isPresented: $confirmRepair, titleVisibility: .visible) {
-            Button("Forget and search", role: .destructive) { host.startPairing() }
+            Button("Forget and search", role: .destructive) { host.connectNew() }
         }
     }
 

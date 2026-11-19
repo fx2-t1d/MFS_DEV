@@ -33,8 +33,14 @@ final class G7GlucoseHost: CGMHostBase, ObservableObject, G7StateObserver {
         refreshPairing()
     }
 
+    var hasConnectedDevice: Bool { manager.sensorName != nil || manager.isConnected || manager.isScanning }
+
+    func disconnect() {
+        manager.sensor.stopScanning()
+    }
+
     /// G7 pairs by listening for a sensor that was just started; no code is entered.
-    func startPairing() {
+    func beginPairing() {
         manager.scanForNewSensor()
         store.save(manager.rawState)
         refreshPairing()
@@ -55,7 +61,9 @@ final class G7GlucoseHost: CGMHostBase, ObservableObject, G7StateObserver {
 
     func g7ConnectionStatusDidChange() { refreshPairing() }
 
+    /// Never scans unless a sensor was already paired: with no sensor the manager would connect to any nearby G7.
     func fetchNewData() {
+        guard manager.sensorName != nil else { return }
         manager.fetchNewDataIfNeeded { [weak self] result in
             self?.handle(result)
         }

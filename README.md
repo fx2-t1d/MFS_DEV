@@ -48,3 +48,7 @@ Connect devices can pair a new Omnipod DASH. This is the one exception to MFS be
 ## Patches to submodules
 
 `patches/` holds changes applied to pinned submodules by `scripts/apply_patches.sh`, which the build and test workflows run after checkout (run it locally after `git submodule update --init`). `G7SensorKit-stelo.patch` lets the G7 manager connect to Dexcom Stelo, which advertises as `DX01`; upstream rejected it as unmerged (LoopKit/G7SensorKit#30). Stelo is community-tested only and has no alerts through MFS. Remove the patch when upstream supports Stelo.
+
+## Connecting devices
+
+Nothing connects on its own. At launch MFS only resumes a G7 sensor that was already paired; with none paired it never scans, so it cannot attach to a nearby stranger's sensor. Pairing starts only when the user taps the pair button in Connect devices, and every device follows the same flow (`DeviceConnection`): check for an existing connection, disconnect it, then start the new one.
