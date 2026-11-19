@@ -15,6 +15,7 @@ jobs:
       - name: Select Xcode version
         run: sudo xcode-select --switch /Applications/Xcode_${{ vars.XCODE_VERSION || '16.4' }}.app/Contents/Developer
       - run: ruby scripts/test_update_dependencies.rb
+      - run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_scan_dependency_updates.py'
       - run: bundle install
       - run: ./scripts/check_no_delivery_commands.sh
       - run: bundle exec fastlane test

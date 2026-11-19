@@ -24,7 +24,6 @@ abort "Expected exactly one pinned fastlane entry in Gemfile" unless contents.sc
 updated = contents.gsub(pattern, "\\1\"#{version}\"")
 File.write("Gemfile", updated)
 RUBY
-      bundle update fastlane
       ;;
     *)
       echo "Unsupported dependency: $dependency" >&2

@@ -49,7 +49,7 @@ class UpdateDependenciesTest < Minitest::Test
     assert_includes command("git", "diff", "--name-only", chdir: app), "LoopKit"
   end
 
-  def test_updates_fastlane_pin_and_runs_bundler
+  def test_updates_fastlane_pin_without_installing_before_scan
     bin = File.join(@directory, "bin")
     FileUtils.mkdir_p(bin)
     File.write(File.join(@directory, "Gemfile"), "source \"https://rubygems.org\"\ngem \"fastlane\", \"2.240.1\"\n")
@@ -59,7 +59,7 @@ class UpdateDependenciesTest < Minitest::Test
     @environment["PATH"] = "#{bin}:#{ENV.fetch("PATH")}"
     command("bash", SCRIPT, "fastlane")
     assert_includes File.read(File.join(@directory, "Gemfile")), 'gem "fastlane", "2.241.2"'
-    assert_equal "update fastlane", File.read(File.join(@directory, "bundle-arguments"))
+    refute File.exist?(File.join(@directory, "bundle-arguments"))
   end
 
   def test_rejects_missing_or_unknown_selection

@@ -62,6 +62,8 @@ jobs:
           [[ "$UPDATE_RILEYLINKKIT" == true ]] && dependencies+=(RileyLinkKit)
           [[ "$UPDATE_FASTLANE" == true ]] && dependencies+=(fastlane)
           bash scripts/update_dependencies.sh "${dependencies[@]}"
+          python3 scripts/scan_dependency_updates.py "${dependencies[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [[ "$UPDATE_FASTLANE" == true ]]; then bundle update fastlane; fi
           BUNDLE_FROZEN=true bundle install
           git add -- LoopKit G7SensorKit OmnipodKit RileyLinkKit Gemfile Gemfile.lock
           if git diff --cached --quiet; then
