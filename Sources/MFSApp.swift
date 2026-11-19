@@ -28,6 +28,7 @@ struct MFSApp: App {
     @StateObject private var glucoseFeed: GlucoseFeed
     private let cgmHost: AnyObject?
     private let fetchGlucose: () -> Void
+    @StateObject private var deviceActions: DeviceActions
     @State private var selectedSection: MFSSection = .manage
     @State private var managePath = NavigationPath()
     @State private var foodPath = NavigationPath()
@@ -36,19 +37,25 @@ struct MFSApp: App {
     init() {
         let feed = GlucoseFeed()
         _glucoseFeed = StateObject(wrappedValue: feed)
+        let sourceName: String
         // Like LoopKit's example host, don't start device managers when hosting XCTest.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             cgmHost = nil
             fetchGlucose = {}
+            sourceName = "None"
         } else if MockGlucoseHost.isEnabled {
             let host = MockGlucoseHost(feed: feed)
             cgmHost = host
             fetchGlucose = { host.fetchNewData() }
+            sourceName = "Mock CGM"
         } else {
             let host = G7GlucoseHost(feed: feed)
             cgmHost = host
             fetchGlucose = { host.fetchNewData() }
+            sourceName = "Dexcom G7"
         }
+        let fetch = fetchGlucose
+        _deviceActions = StateObject(wrappedValue: DeviceActions(sourceName: sourceName, refreshGlucose: fetch))
     }
 
     var body: some Scene {
@@ -82,6 +89,7 @@ struct MFSApp: App {
             .preferredColorScheme(.light)
             .environmentObject(foodStore)
             .environmentObject(glucoseFeed)
+            .environmentObject(deviceActions)
             .onAppear { fetchGlucose() }
             .onChange(of: foodStore.food?.id) { _, id in
                 guard id != nil else { return }
@@ -138,6 +146,7 @@ struct MacroPieChart: View {
 
 private struct ManageView: View {
     @EnvironmentObject private var store: AcceptedFoodStore
+    @State private var showDevices = false
 
     var body: some View {
         List {
@@ -174,12 +183,65 @@ private struct ManageView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Connect devices") {}.disabled(true)
+                    Button("Connect devices") { showDevices = true }
                     Button("Dose formulas") {}.disabled(true)
                     Button("Safety limits") {}.disabled(true)
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+            }
+        }
+        .sheet(isPresented: $showDevices) { ConnectDevicesView() }
+    }
+}
+
+/// Lets views trigger a CGM fetch without knowing which host is active.
+final class DeviceActions: ObservableObject {
+    let sourceName: String
+    let refreshGlucose: () -> Void
+
+    init(sourceName: String, refreshGlucose: @escaping () -> Void) {
+        self.sourceName = sourceName
+        self.refreshGlucose = refreshGlucose
+    }
+}
+
+private struct ConnectDevicesView: View {
+    @EnvironmentObject private var feed: GlucoseFeed
+    @EnvironmentObject private var actions: DeviceActions
+    @Environment(\.dismiss) private var dismiss
+
+    private var latest: GlucoseReading? { feed.readings.last }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Dexcom G7") {
+                    LabeledContent("Source", value: actions.sourceName)
+                    if let latest {
+                        LabeledContent("Status", value: "Receiving")
+                        LabeledContent("Last reading") {
+                            Text("\(Int(latest.milligramsPerDeciliter.rounded())) mg/dL, \(latest.date.formatted(date: .omitted, time: .shortened))")
+                        }
+                    } else {
+                        LabeledContent("Status", value: "Waiting for first reading")
+                        Text("Start your G7 sensor in the Dexcom app or with its applicator, keep this phone nearby and Bluetooth on. Readings appear within about 5 minutes.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    Button("Check for new readings") { actions.refreshGlucose() }
+                }
+                Section("Omnipod DASH") {
+                    LabeledContent("Status", value: "Not available yet")
+                    Text("Pump connection is a placeholder. Basal and bolus values stay unavailable until it is built.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Connect devices")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
     }
