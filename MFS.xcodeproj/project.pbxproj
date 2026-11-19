@@ -26,6 +26,7 @@
 		A10000000000000000000010 /* NutritionScanning.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* NutritionScanning.swift */; };
 		A10000000000000000000044 /* DeviceStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* DeviceStateStore.swift */; };
 		A10000000000000000000045 /* G7GlucoseHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* G7GlucoseHost.swift */; };
+		A10000000000000000000070 /* OmnipodPairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000071 /* OmnipodPairing.swift */; };
 		A10000000000000000000046 /* OmnipodHistoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042 /* OmnipodHistoryReader.swift */; };
 		A10000000000000000000047 /* DeviceStateStore.swift in MFSTests Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* DeviceStateStore.swift */; };
 		A10000000000000000000048 /* DeviceStateStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* DeviceStateStoreTests.swift */; };
@@ -62,6 +63,7 @@
 		A10000000000000000000028 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		A10000000000000000000040 /* DeviceStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/DeviceStateStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000041 /* G7GlucoseHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/G7GlucoseHost.swift; sourceTree = "<group>"; };
+		A10000000000000000000071 /* OmnipodPairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/OmnipodPairing.swift; sourceTree = "<group>"; };
 		A10000000000000000000042 /* OmnipodHistoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/OmnipodHistoryReader.swift; sourceTree = "<group>"; };
 		A10000000000000000000043 /* DeviceStateStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceStateStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000050 /* GlucoseForecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/GlucoseForecast.swift; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				A10000000000000000000058 /* CGMHostBase.swift */,
 				A10000000000000000000059 /* MockGlucoseHost.swift */,
 				A10000000000000000000042 /* OmnipodHistoryReader.swift */,
+				A10000000000000000000071 /* OmnipodPairing.swift */,
 				A10000000000000000000033 /* Assets.xcassets */,
 				A10000000000000000000016 /* MFSTests */, 
 				B1000000000000000000301 /* Frameworks */,
@@ -227,7 +230,7 @@
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* Begin PBXSourcesBuildPhase section */
-		A10000000000000000000009 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* MFSApp.swift in Sources */, A10000000000000000000010 /* NutritionScanning.swift in Sources */, A10000000000000000000044 /* DeviceStateStore.swift in Sources */, A10000000000000000000045 /* G7GlucoseHost.swift in Sources */, A10000000000000000000060 /* GlucoseFeed.swift in Sources */, A10000000000000000000061 /* CGMHostBase.swift in Sources */, A10000000000000000000062 /* MockGlucoseHost.swift in Sources */,  A10000000000000000000046 /* OmnipodHistoryReader.swift in Sources */, A10000000000000000000053 /* GlucoseForecast.swift in Sources */, A10000000000000000000054 /* GlucoseView.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000009 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* MFSApp.swift in Sources */, A10000000000000000000010 /* NutritionScanning.swift in Sources */, A10000000000000000000044 /* DeviceStateStore.swift in Sources */, A10000000000000000000045 /* G7GlucoseHost.swift in Sources */, A10000000000000000000060 /* GlucoseFeed.swift in Sources */, A10000000000000000000061 /* CGMHostBase.swift in Sources */, A10000000000000000000062 /* MockGlucoseHost.swift in Sources */,  A10000000000000000000046 /* OmnipodHistoryReader.swift in Sources */, A10000000000000000000070 /* OmnipodPairing.swift in Sources */, A10000000000000000000053 /* GlucoseForecast.swift in Sources */, A10000000000000000000054 /* GlucoseView.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 		A10000000000000000000024 /* PBXContainerItemProxy */ = {

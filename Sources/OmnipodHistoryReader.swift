@@ -1,10 +1,17 @@
 import Foundation
 import LoopKit
+import LoopKitUI
 import OmnipodKit
 
 /// Restores a previously paired Omnipod DASH manager and records its reservoir and history callbacks.
-/// Read-only: this type never issues delivery commands (enforced by scripts/check_no_delivery_commands.sh).
-final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegate {
+/// This type never issues delivery commands (enforced by scripts/check_no_delivery_commands.sh);
+/// pod activation runs only through OmnipodKit's own setup screens (see OmnipodPairing.swift).
+final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegate, PumpManagerOnboardingDelegate {
+    struct PodSummary: Equatable {
+        let status: String
+        let expiresAt: Date?
+    }
+
     struct HistoryEvent: Hashable {
         let date: Date
         let title: String
@@ -18,12 +25,14 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
     @Published private(set) var reservoir: ReservoirReading?
     @Published private(set) var history: [HistoryEvent] = []
     @Published private(set) var lastError: String?
+    /// nil when no pod is paired.
+    @Published private(set) var podSummary: PodSummary?
 
     private let store: DeviceStateStore
     private let queue = DispatchQueue(label: "MFS.OmnipodHistoryReader")
-    private(set) var manager: OmniPumpManager?
+    @Published private(set) var manager: OmniPumpManager?
 
-    /// Pod pairing is not handled here; without saved state there is no manager and nothing is read.
+    /// Without saved state there is no manager until a pod is paired through `OmnipodFlowView`.
     init(store: DeviceStateStore = DeviceStateStore(key: "MFS.OmniPumpManager.rawState")) {
         self.store = store
         super.init()
@@ -32,7 +41,40 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
             restored.delegateQueue = queue
             manager = restored
         }
+        refreshSummary()
     }
+
+    /// Takes over a manager created by OmnipodKit's setup flow.
+    func adopt(_ newManager: OmniPumpManager) {
+        newManager.pumpManagerDelegate = self
+        newManager.delegateQueue = queue
+        store.save(newManager.rawState)
+        DispatchQueue.main.async {
+            self.manager = newManager
+            self.refreshSummary()
+        }
+    }
+
+    func refreshSummary() {
+        guard let manager, let pod = manager.state.podState else {
+            podSummary = nil
+            return
+        }
+        let status = manager.isOnboarded ? "Active" : "Setting up"
+        podSummary = PodSummary(status: status, expiresAt: pod.expiresAt)
+    }
+
+    // MARK: PumpManagerOnboardingDelegate
+
+    func pumpManagerOnboarding(didCreatePumpManager pumpManager: PumpManagerUI) {
+        if let created = pumpManager as? OmniPumpManager { adopt(created) }
+    }
+
+    func pumpManagerOnboarding(didOnboardPumpManager pumpManager: PumpManagerUI) {
+        if let created = pumpManager as? OmniPumpManager { adopt(created) }
+    }
+
+    func pumpManagerOnboarding(didPauseOnboarding pumpManager: PumpManagerUI) {}
 
     // MARK: PumpManagerDelegate
 
@@ -58,10 +100,15 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
 
     func pumpManagerDidUpdateState(_ pumpManager: PumpManager) {
         store.save(pumpManager.rawState)
+        DispatchQueue.main.async { self.refreshSummary() }
     }
 
     func pumpManagerWillDeactivate(_ pumpManager: PumpManager) {
         store.clear()
+        DispatchQueue.main.async {
+            self.manager = nil
+            self.refreshSummary()
+        }
     }
 
     func startDateToFilterNewPumpEvents(for manager: PumpManager) -> Date {

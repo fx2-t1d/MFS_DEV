@@ -39,6 +39,7 @@ struct MFSApp: App {
         _glucoseFeed = StateObject(wrappedValue: feed)
         let sourceName: String
         var g7Host: G7GlucoseHost?
+        var omnipodReader: OmnipodHistoryReader?
         // Like LoopKit's example host, don't start device managers when hosting XCTest.
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             cgmHost = nil
@@ -56,8 +57,11 @@ struct MFSApp: App {
             fetchGlucose = { host.fetchNewData() }
             sourceName = "Dexcom G7"
         }
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+            omnipodReader = OmnipodHistoryReader()
+        }
         let fetch = fetchGlucose
-        _deviceActions = StateObject(wrappedValue: DeviceActions(sourceName: sourceName, g7: g7Host, refreshGlucose: fetch))
+        _deviceActions = StateObject(wrappedValue: DeviceActions(sourceName: sourceName, g7: g7Host, omnipod: omnipodReader, refreshGlucose: fetch))
     }
 
     var body: some Scene {
@@ -203,10 +207,12 @@ final class DeviceActions: ObservableObject {
     let refreshGlucose: () -> Void
     /// nil when the real G7 host is not running (tests, mock CGM).
     let g7: G7GlucoseHost?
+    let omnipod: OmnipodHistoryReader?
 
-    init(sourceName: String, g7: G7GlucoseHost? = nil, refreshGlucose: @escaping () -> Void) {
+    init(sourceName: String, g7: G7GlucoseHost? = nil, omnipod: OmnipodHistoryReader? = nil, refreshGlucose: @escaping () -> Void) {
         self.sourceName = sourceName
         self.g7 = g7
+        self.omnipod = omnipod
         self.refreshGlucose = refreshGlucose
     }
 }
@@ -228,11 +234,14 @@ private struct ConnectDevicesView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                Section("Omnipod DASH") {
-                    LabeledContent("Status", value: "Not available yet")
-                    Text("Pump connection is a placeholder. Basal and bolus values stay unavailable until it is built.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                if let omnipod = actions.omnipod {
+                    OmnipodSection(reader: omnipod)
+                } else {
+                    Section("Omnipod DASH") {
+                        Text("Unavailable in this build.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .navigationTitle("Connect devices")
