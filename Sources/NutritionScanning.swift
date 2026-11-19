@@ -363,6 +363,40 @@ struct AcceptedFood: Identifiable {
     }
 }
 
+/// One accepted record made of several foods plus an optional photo. Later actions use the whole record.
+struct AcceptedMeal: Identifiable {
+    let items: [AcceptedFood]
+    let photoJPEG: Data?
+    /// The whole meal as a single 100 g "serving", so entered totals are the record's totals.
+    let combined: AcceptedFood
+
+    var id: UUID { combined.id }
+
+    init(items: [AcceptedFood], photoJPEG: Data? = nil) {
+        self.items = items
+        self.photoJPEG = photoJPEG
+        if items.count == 1, var only = items.first {
+            only.photoJPEG = photoJPEG ?? only.photoJPEG
+            combined = only
+            return
+        }
+        var totals: [NutritionField: Double] = [:]
+        for item in items {
+            guard let quantity = item.product.servingQuantity, quantity.isFinite, quantity > 0,
+                  item.product.servingUnit == "g" || item.product.servingUnit == "ml",
+                  item.servings.isFinite, item.servings > 0 else { continue }
+            for (field, per100g) in item.product.nutrientsPer100g where per100g.isFinite && per100g >= 0 {
+                totals[field, default: 0] += per100g * quantity / 100 * item.servings
+            }
+        }
+        let product = OpenFoodFactsProduct(
+            barcode: "", name: items.map(\.product.name).joined(separator: ", "), brands: nil,
+            servingSize: "whole meal", nutritionValues: [:], nutrientsPer100g: totals,
+            servingQuantity: 100, servingUnit: "g")
+        combined = AcceptedFood(product: product, servings: 1, photoJPEG: photoJPEG)
+    }
+}
+
 /// Local extension boundary. Contains no credentials, endpoint, or networking.
 struct TidepoolPreparedFood {
     let acceptedFoodID: UUID

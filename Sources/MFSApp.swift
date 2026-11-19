@@ -109,15 +109,22 @@ struct MFSApp: App {
 }
 
 final class AcceptedFoodStore: ObservableObject {
+    /// The whole accepted record, combined into one food for totals, charts and Tidepool.
     @Published private(set) var food: AcceptedFood?
+    @Published private(set) var meal: AcceptedMeal?
     @Published private(set) var tidepoolDraft: TidepoolPreparedFood?
     /// When eating started (or will start). nil means "now", following the latest glucose reading.
     @Published var mealTime: Date?
 
     func accept(_ food: AcceptedFood) {
+        accept(AcceptedMeal(items: [food]))
+    }
+
+    func accept(_ meal: AcceptedMeal) {
         mealTime = nil
-        tidepoolDraft = TidepoolPreparedFood(food: food)
-        self.food = food
+        tidepoolDraft = TidepoolPreparedFood(food: meal.combined)
+        self.meal = meal
+        food = meal.combined
     }
 }
 
@@ -166,7 +173,13 @@ private struct ManageView: View {
                     if let data = food.photoJPEG, let image = UIImage(data: data) {
                         Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 160)
                     }
-                    LabeledContent("Servings", value: food.servings.formatted())
+                    if let items = store.meal?.items, items.count > 1 {
+                        ForEach(items) { item in
+                            LabeledContent(item.product.name, value: "\(item.servings.formatted()) × \(gramsText(item.totalCarbohydrates)) carbs")
+                        }
+                    } else {
+                        LabeledContent("Servings", value: food.servings.formatted())
+                    }
                     MacroPieChart(food: food)
                     LabeledContent("Total carbs", value: gramsText(food.totalCarbohydrates))
                     LabeledContent("Net carbs", value: gramsText(food.netCarbohydrates))

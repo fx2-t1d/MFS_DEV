@@ -127,21 +127,21 @@ struct ManualFoodView: View {
 
     private func accept() {
         guard validationMessage == nil else { return }
-        let jpeg = photo?.jpegData(compressionQuality: 0.7)
-        for (index, row) in rows.enumerated() {
+        var items: [AcceptedFood] = []
+        for row in rows {
             guard let carbGrams = grams(row.carbs), let proteinGrams = grams(row.protein) else { return }
             var nutrients: [NutritionField: Double] = [.carbohydrates: carbGrams, .protein: proteinGrams]
             if let fatGrams = grams(row.fat) { nutrients[.totalFat] = fatGrams }
             if let fiberGrams = grams(row.fiber) { nutrients[.fiber] = fiberGrams }
-            // Modeled as 100 g servings so the entered grams are per serving (or the meal total).
+            // Modeled as 100 g servings so the entered grams are per serving (or the row total).
             let product = OpenFoodFactsProduct(
                 barcode: "", name: row.name.trimmingCharacters(in: .whitespaces), brands: nil,
                 servingSize: row.perServing ? "serving" : "whole meal", nutritionValues: [:], nutrientsPer100g: nutrients,
                 servingQuantity: 100, servingUnit: "g")
-            let servings = row.perServing ? (grams(row.servings) ?? 1) : 1
-            // The photo belongs to the meal, so it is stored once, on the first row.
-            foodStore.accept(AcceptedFood(product: product, servings: servings, photoJPEG: index == 0 ? jpeg : nil))
+            items.append(AcceptedFood(product: product, servings: row.perServing ? (grams(row.servings) ?? 1) : 1))
         }
+        // The whole table and the photo become one record.
+        foodStore.accept(AcceptedMeal(items: items, photoJPEG: photo?.jpegData(compressionQuality: 0.7)))
         rows = [Row()]
         photo = nil
     }

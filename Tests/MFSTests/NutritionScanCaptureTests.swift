@@ -199,4 +199,18 @@ final class AcceptedFoodTests: XCTestCase {
         XCTAssertNil(food.netCarbohydrates)
         XCTAssertNil(TidepoolPreparedFood(food: food).nutritionJSON)
     }
+
+    func testMealCombinesRowsAndPhotoIntoOneRecord() {
+        func food(_ name: String, carbs: Double, protein: Double, servings: Double) -> AcceptedFood {
+            AcceptedFood(product: OpenFoodFactsProduct(barcode: "", name: name, brands: nil, servingSize: "serving",
+                nutritionValues: [:], nutrientsPer100g: [.carbohydrates: carbs, .protein: protein],
+                servingQuantity: 100, servingUnit: "g"), servings: servings)
+        }
+        let photo = Data([1, 2, 3])
+        let meal = AcceptedMeal(items: [food("Rice", carbs: 30, protein: 3, servings: 2), food("Egg", carbs: 1, protein: 6, servings: 1)], photoJPEG: photo)
+        XCTAssertEqual(meal.combined.totalCarbohydrates, 61)
+        XCTAssertEqual(meal.combined.totalProtein, 12)
+        XCTAssertEqual(meal.combined.product.name, "Rice, Egg")
+        XCTAssertEqual(meal.combined.photoJPEG, photo)
+    }
 }
