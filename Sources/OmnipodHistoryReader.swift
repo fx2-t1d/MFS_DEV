@@ -12,10 +12,7 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
         let expiresAt: Date?
     }
 
-    struct HistoryEvent: Hashable, Codable {
-        let date: Date
-        let title: String
-    }
+    typealias HistoryEvent = PumpHistoryEvent
 
     struct ReservoirReading: ReservoirValue, Equatable {
         let startDate: Date
@@ -24,7 +21,6 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
 
     @Published private(set) var reservoir: ReservoirReading?
     @Published private(set) var history: [HistoryEvent]
-    private let historyStore = HistoryStore<HistoryEvent>(filename: "pump-history.json")
     @Published private(set) var lastError: String?
     /// nil when no pod is paired.
     @Published private(set) var podSummary: PodSummary?
@@ -35,7 +31,7 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
     /// Without saved state there is no manager until a pod is paired through `OmnipodFlowView`.
     init(store: DeviceStateStore = DeviceStateStore(key: "MFS.OmniPumpManager.rawState")) {
         self.store = store
-        history = historyStore.load()
+        history = HistoryDatabase.shared.pumpEvents()
         super.init()
         if let rawState = store.load(), let restored = OmniPumpManager(rawState: rawState) {
             restored.pumpManagerDelegate = self
@@ -93,8 +89,9 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
         let new = events.map { HistoryEvent(date: $0.date, title: $0.title) }
         await MainActor.run {
             let known = Set(self.history)
-            self.history = (self.history + new.filter { !known.contains($0) }).sorted { $0.date < $1.date }
-            self.historyStore.save(self.history)
+            let added = new.filter { !known.contains($0) }
+            self.history = (self.history + added).sorted { $0.date < $1.date }
+            HistoryDatabase.shared.addPumpEvents(added)
         }
     }
 

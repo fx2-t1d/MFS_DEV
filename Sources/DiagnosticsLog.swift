@@ -22,11 +22,14 @@ final class DiagnosticsLog: ObservableObject {
         return f
     }()
 
-    private let store = HistoryStore<String>(filename: "diagnostics-log.json")
     @Published private(set) var lines: [String]
     @Published private(set) var stats: [String: PipelineStats] = [:]
 
-    init() { lines = store.load() }
+    /// Earlier lines are loaded from the history database on the main thread right after creation.
+    init() {
+        lines = []
+        DispatchQueue.main.async { [self] in lines = HistoryDatabase.shared.logLines() + lines }
+    }
 
     func record(_ source: String, _ message: String) {
         let line = "\(stamp.string(from: Date())) [\(source)] \(message)"
@@ -34,7 +37,7 @@ final class DiagnosticsLog: ObservableObject {
         DispatchQueue.main.async {
             self.lines.append(line)
             if self.lines.count > Self.maxLines { self.lines.removeFirst(self.lines.count - Self.maxLines) }
-            self.store.save(self.lines)
+            HistoryDatabase.shared.addLogLine(line)
         }
     }
 
@@ -43,6 +46,6 @@ final class DiagnosticsLog: ObservableObject {
     }
 
     func clear() {
-        DispatchQueue.main.async { self.lines = []; self.stats = [:]; self.store.save([]) }
+        DispatchQueue.main.async { self.lines = []; self.stats = [:]; HistoryDatabase.shared.clearLog() }
     }
 }
