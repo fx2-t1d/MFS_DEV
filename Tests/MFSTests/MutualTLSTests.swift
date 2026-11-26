@@ -136,12 +136,6 @@ final class MutualTLSTests: XCTestCase {
         }
         wait(for: [done], timeout: 1)
     }
-}
-
-private final class StubSender: NSObject, URLAuthenticationChallengeSender {
-    func use(_ credential: URLCredential, for challenge: URLAuthenticationChallenge) {}
-    func continueWithoutCredential(for challenge: URLAuthenticationChallenge) {}
-    func cancel(_ challenge: URLAuthenticationChallenge) {}
 
     func testBiometricsGoToTheirOwnEndpointAndNeverCarryGlucose() async throws {
         stub()
@@ -156,4 +150,10 @@ private final class StubSender: NSObject, URLAuthenticationChallengeSender {
             XCTAssertEqual(error as? DigitalMeUploadError, .invalidRecord(0))
         }
     }
+}
+
+private final class StubSender: NSObject, URLAuthenticationChallengeSender {
+    func use(_ credential: URLCredential, for challenge: URLAuthenticationChallenge) {}
+    func continueWithoutCredential(for challenge: URLAuthenticationChallenge) {}
+    func cancel(_ challenge: URLAuthenticationChallenge) {}
 }
