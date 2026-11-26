@@ -28,8 +28,8 @@ jobs:
           # Switch to master once TidepoolApi_extended PR #1 is merged.
           ref: master
           path: spec
-      - run: python3 -m pip install pyyaml
-      - run: SPEC_DIR="$GITHUB_WORKSPACE/spec" PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_biometric_spec_conformance.py'
+      - run: python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install pyyaml
+      - run: SPEC_DIR="$GITHUB_WORKSPACE/spec" PYTHONDONTWRITEBYTECODE=1 "$RUNNER_TEMP/venv/bin/python" -m unittest discover -s scripts -p 'test_biometric_spec_conformance.py'
       - run: bundle install
       - run: ./scripts/check_no_delivery_commands.sh
       - run: ./scripts/check_no_remote_control.sh
