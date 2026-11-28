@@ -124,9 +124,22 @@ struct PredictionEvaluationView: View {
         }
     }
 
+    /// Sections for the host List: controls first, so model and axis choices are always on screen.
     var body: some View {
         let evaluations = evaluations
-        List {
+        Group {
+            Section {
+                HStack {
+                    modelsMenu
+                    Spacer()
+                    Button { showAxes = true } label: { Label("Axes", systemImage: "chart.xyaxis.line") }
+                }
+                .buttonStyle(.borderless)
+                Text("Models: " + selectedModels.map(\.name).joined(separator: ", "))
+                    .font(.caption).foregroundStyle(.secondary)
+            } header: {
+                Text("Predictions")
+            }
             if registry.models.isEmpty {
                 Text("No prediction models are available.").foregroundStyle(.secondary)
             } else if let time = predictionTime, !evaluations.isEmpty {
@@ -135,17 +148,20 @@ struct PredictionEvaluationView: View {
                 Text("Needs at least two glucose readings.").foregroundStyle(.secondary)
             }
         }
-        .navigationTitle("Predictions")
-        .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                modelsMenu
-                Button { showAxes = true } label: { Label("Axes", systemImage: "chart.xyaxis.line") }
-            }
-        }
         .sheet(isPresented: $showAxes) { PredictionAxesSheet(config: $config) }
         .onChange(of: config) { _, newValue in
             if let data = try? JSONEncoder().encode(newValue) { UserDefaults.standard.set(data, forKey: Self.configKey) }
         }
+        .onChange(of: context.foods) { _, foods in
+            if !foods.isEmpty { offset = 1 } // show what the new food is predicted to do from now
+        }
+    }
+
+    private var foodText: String? {
+        guard let food = context.foods.last else { return nil }
+        let parts = [(food.carbohydrates, "c carbs"), (food.protein, "p protein"), (food.fat, "g fat")]
+            .compactMap { grams, label in grams.map { "\($0.formatted(axisNumber)) \(label)" } }
+        return parts.isEmpty ? "Food entered" : "Food: " + parts.joined(separator: " · ")
     }
 
     private var modelsMenu: some View {
@@ -171,10 +187,18 @@ struct PredictionEvaluationView: View {
         Section("Prediction") {
             PredictionChart(layout: layout, predictionTime: time)
         }
-        Section("Predicted at") {
+        Section {
             Slider(value: $offset, in: 0...1)
             Text(time.formatted(date: .abbreviated, time: .shortened))
                 .font(.caption).foregroundStyle(.secondary)
+            if let foodText {
+                Text(foodText + (context.foods.last.map { $0.time <= time } == true
+                                 ? ". Each model's curve includes it; a model with no food math will not change."
+                                 : ". Move the time later to include it."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Predicted at")
         }
         ForEach(evaluations, id: \.evaluation.modelID) { entry in
             if let failure = entry.evaluation.failure {

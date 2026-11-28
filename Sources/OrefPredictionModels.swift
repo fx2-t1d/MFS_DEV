@@ -26,8 +26,8 @@ enum OrefPredictionModels {
     static func models(settings: PredictionWire.Settings?, bundle: Bundle = .main) -> [PredictionModel] {
         let transport = transport(bundle: bundle)
         return [
-            ScriptPredictionModel(id: "oref0", name: "oref0", transport: transport, settings: settings, options: ["variant": "oref0"]),
-            ScriptPredictionModel(id: "oref1", name: "oref1", transport: transport, settings: settings, options: ["variant": "oref1"]),
+            ScriptPredictionModel(id: "oref0", name: "Oref0", transport: transport, settings: settings, options: ["variant": "oref0"]),
+            ScriptPredictionModel(id: "oref1", name: "Oref1", transport: transport, settings: settings, options: ["variant": "oref1"]),
         ]
     }
 }
@@ -40,9 +40,9 @@ extension PredictionWire.Settings {
 }
 
 extension PredictionModelRegistry {
-    /// The app's own default model plus oref0 and oref1.
+    /// The app's own model (Descartes1) plus Oref0 and Oref1.
     static func standard(settings: PredictionWire.Settings?, bundle: Bundle = .main) -> PredictionModelRegistry {
-        PredictionModelRegistry(models: [ForecasterPredictionModel(id: "baseline", name: "Default model")]
+        PredictionModelRegistry(models: [ForecasterPredictionModel(id: "descartes1", name: "Descartes1")]
             + OrefPredictionModels.models(settings: settings, bundle: bundle))
     }
 }

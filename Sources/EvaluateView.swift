@@ -78,6 +78,7 @@ struct EvaluateView: View {
     @EnvironmentObject private var feed: GlucoseFeed
     @EnvironmentObject private var actions: DeviceActions
     @EnvironmentObject private var profiles: InsulinProfileStore
+    @EnvironmentObject private var foodStore: AcceptedFoodStore
     @StateObject private var biometrics = EvaluateBiometrics()
     @State private var enabled: Set<EvaluateSeries> = [.glucose]
     @State private var hours = 24
@@ -89,7 +90,13 @@ struct EvaluateView: View {
     }
 
     private var predictionContext: ForecastContext {
-        ForecastContext(readings: feed.readings,
+        // The food enters at its meal time, but never later than the latest reading.
+        let anchor = feed.readings.last?.date ?? Date()
+        let foods = foodStore.food.map {
+            [FoodEvent(time: min(foodStore.mealTime ?? anchor, anchor), carbohydrates: $0.totalCarbohydrates,
+                       protein: $0.totalProtein, fat: $0.totalFat)]
+        } ?? []
+        return ForecastContext(readings: feed.readings, foods: foods,
                         doses: actions.insulinDoses.filter { $0.kind == .bolus }.map { DoseEvent(time: $0.start, units: $0.units) })
     }
 
@@ -140,13 +147,7 @@ struct EvaluateView: View {
                 }
                 .pickerStyle(.segmented)
             }
-            Section {
-                NavigationLink("Predictions") {
-                    PredictionEvaluationView(registry: predictionRegistry, context: predictionContext)
-                }
-            } footer: {
-                Text("Compare a model's prediction at a chosen moment with what glucose actually did.")
-            }
+            PredictionEvaluationView(registry: predictionRegistry, context: predictionContext)
             Section("Glucose") { toggle(.glucose) }
             Section {
                 ForEach(EvaluateSeries.insulinParts) { toggle($0) }

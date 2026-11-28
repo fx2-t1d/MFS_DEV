@@ -82,4 +82,4 @@ Both are built in (`Sources/OrefPredictionModels.swift`). They run [openaps/oref
 
 ## Chart axes
 
-The chart has a left and a right y axis. Each data type (glucose, insulin, carbohydrates) is assigned to a side, glucose on the right by default. Each side is scaled automatically from the data shown on it, or fixed to a minimum and maximum. The Models menu in the toolbar chooses which registered models are drawn together; the Axes button opens the axis settings. Choices are saved on the device.
+The chart has a left and a right y axis. Each data type (glucose, insulin, carbohydrates) is assigned to a side, glucose on the right by default. Each side is scaled automatically from the data shown on it, or fixed to a minimum and maximum. The Models menu at the top of the Evaluate tab chooses which registered models are drawn together; the Axes button opens the axis settings. Choices are saved on the device.

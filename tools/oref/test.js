@@ -4,13 +4,13 @@ const vm = require('vm'), fs = require('fs'), path = require('path'), assert = r
 const source = fs.readFileSync(path.join(__dirname, '../../Sources/Resources/oref.bundle.js'), 'utf8');
 const t = 1700000000;
 
-function run(variant, { rising = true, carbs = 40 } = {}) {
+function run(variant, { rising = true, carbs = 40, foodAge = 1800 } = {}) {
   const context = vm.createContext({});
   vm.runInContext(source, context);
   const readings = Array.from({ length: 24 }, (_, i) => ({ t: t - (23 - i) * 300, mgdl: 100 + (rising ? i * 3 : 0) }));
   context.request = JSON.stringify({
     version: 1, time: t, horizon: 7200, step: 300, readings,
-    foods: carbs ? [{ t: t - 1800, carbs, protein: 10, fat: 5 }] : [],
+    foods: carbs ? [{ t: t - foodAge, carbs, protein: 10, fat: 5 }] : [],
     doses: [{ t: t - 1500, units: 3 }],
     settings: { isf: 50, carbRatio: 10, basal: 1, target: 100, dia: 6 }, options: { variant }
   });
@@ -27,4 +27,13 @@ for (const s of oref1.series) {
   assert.ok(s.points.every((p) => p.t <= t + 7200 && Number.isFinite(p.mgdl)));
 }
 assert.ok(run('oref0', { rising: false }).error, 'flat data is reported, not drawn');
+// Food entered now (at the latest reading) must change the prediction.
+const final = (r, name) => r.series.find((x) => x.name === name).points.slice(-1)[0].mgdl;
+for (const variant of ['oref0', 'oref1']) {
+  const withFood = run(variant, { foodAge: 0 });
+  const without = run(variant, { carbs: 0 });
+  assert.ok(!withFood.error, withFood.error);
+  assert.notStrictEqual(final(withFood, 'COB'), final(without, 'IOB'), variant + ': food changes the COB curve');
+  assert.ok(final(withFood, 'COB') > final(without, 'IOB'), variant + ': 40 c raises glucose above the no-food curve');
+}
 console.log('oref bundle OK');
