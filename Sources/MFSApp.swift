@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 import Charts
 import AVFoundation
@@ -29,7 +30,7 @@ struct MFSApp: App {
     @StateObject private var serviceStore = ServiceConnectionStore()
     @StateObject private var formulaStore = DoseFormulaStore()
     @StateObject private var dosingStore = DosingStore()
-    @StateObject private var doseLogStore = DoseLogStore()
+    @StateObject private var database = RecordDatabase.openOrFallback()
     @StateObject private var biometricStream = BiometricStream(read: { kinds, state in
         try await HealthBiometricReader().read(kinds: kinds, state: state)
     })
@@ -109,7 +110,8 @@ struct MFSApp: App {
             .environmentObject(foodStore)
             .environmentObject(formulaStore)
             .environmentObject(dosingStore)
-            .environmentObject(doseLogStore)
+            .environmentObject(database)
+            .modelContainer(database.container)
             .environmentObject(profileStore)
             .environmentObject(serviceStore)
             .environmentObject(biometricStream)
@@ -198,7 +200,8 @@ private struct ManageView: View {
     @State private var showStream = false
     @State private var showLog = false
     @State private var confirmLog = false
-    @EnvironmentObject private var doseLog: DoseLogStore
+    @EnvironmentObject private var database: RecordDatabase
+    @Query private var loggedMeals: [FoodEntry]
     @EnvironmentObject private var dosing: DosingStore
     @EnvironmentObject private var formulaStore: DoseFormulaStore
     @EnvironmentObject private var profileStore: InsulinProfileStore
@@ -223,8 +226,8 @@ private struct ManageView: View {
                         LabeledContent("Servings", value: food.servings.formatted())
                     }
                     MacroPieChart(food: food)
-                    Button(store.meal?.id == doseLog.lastLoggedMealID ? "Logged" : "Log dose", systemImage: "lock.doc") { confirmLog = true }
-                        .disabled(store.meal == nil || store.meal?.id == doseLog.lastLoggedMealID)
+                    Button(alreadyLogged ? "Logged" : "Log dose", systemImage: "lock.doc") { confirmLog = true }
+                        .disabled(store.meal == nil || alreadyLogged)
                     LabeledContent("Total carbs", value: gramsText(food.totalCarbohydrates, unit: "c"))
                     LabeledContent("Net carbs", value: gramsText(food.netCarbohydrates, unit: "c"))
                     LabeledContent("Protein", value: gramsText(food.totalProtein, unit: "p"))
@@ -277,14 +280,24 @@ private struct ManageView: View {
 }
 
 extension ManageView {
+    fileprivate var alreadyLogged: Bool { loggedMeals.contains { $0.groupID == store.meal?.id } }
+
     fileprivate func logMeal() {
         guard let meal = store.meal else { return }
         let glucose = feed.readings.last
         let recommendation = DosingSummary.recommendation(
             mode: dosing.mode, food: meal.combined, formula: formulaStore.formula, profiles: profileStore,
             dosing: dosing, glucose: glucose, iob: RecordedInsulinOnBoard(doses: actions.insulinDoses))
-        doseLog.log(meal: meal, mealTime: store.mealTime ?? Date(), glucose: glucose?.milligramsPerDeciliter,
-                    profileName: profileStore.active.name, recommendation: recommendation, formula: formulaStore.formula)
+        let snapshot = DosingSnapshot(
+            glucoseMgdl: glucose?.milligramsPerDeciliter, profileName: profileStore.active.name,
+            dosingMode: recommendation.mode.label, recommendedBolusUnits: recommendation.bolusUnits,
+            enhancedBasalUnitsPerHour: recommendation.enhancedBasalUnitsPerHour,
+            enhancedBasalMinutes: recommendation.enhancedBasalMinutes, formula: formulaStore.formula)
+        do {
+            try database.logMeal(meal, mealTime: store.mealTime ?? Date(), dosing: snapshot)
+        } catch {
+            DiagnosticsLog.shared.record("Database", "Could not log meal: \(error.localizedDescription)")
+        }
     }
 }
 
