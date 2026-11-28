@@ -8,8 +8,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  select-runner:
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.select.outputs.runner }}
+    steps:
+      - name: Select an available runner
+        id: select
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+          TRUSTED_RUN: ${{ github.actor == github.repository_owner && (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.user.login == github.repository_owner && github.event.pull_request.head.repo.full_name == github.repository)) }}
+        run: |
+          runner='["macos-15"]'
+          if [[ "$TRUSTED_RUN" != "true" ]]; then
+            echo "Using GitHub-hosted runner for an untrusted pull request or actor."
+          elif [[ -z "$GH_TOKEN" ]]; then
+            echo "::warning::RUNNER_STATUS_TOKEN is not configured; using GitHub-hosted runner."
+          elif ! available=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runners?per_page=100" \
+            --jq 'any(.[]; any(.runners[]; .status == "online" and (.busy | not) and ([.labels[].name | ascii_downcase] | (index("self-hosted") != null and index("macos") != null and index("arm64") != null))))'); then
+            echo "::warning::Could not check self-hosted runners; using GitHub-hosted runner."
+          elif [[ "$available" == "true" ]]; then
+            runner='["self-hosted","macOS","ARM64"]'
+          fi
+          echo "Selected runner: $runner"
+          echo "runner=$runner" >> "$GITHUB_OUTPUT"
+
   test:
-    runs-on: macos-15
+    needs: select-runner
+    runs-on: ${{ fromJSON(needs.select-runner.outputs.runner) }}
     steps:
       - uses: actions/checkout@v5
         with:

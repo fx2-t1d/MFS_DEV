@@ -6,6 +6,12 @@ A standalone SwiftUI iOS app with sections for **Manage**, **Food**, and **Evalu
 
 Open `MFS.xcodeproj`, select the MFS scheme, choose an iOS Simulator, and run. The shared `MFSTests` scheme includes a fixture-based scan test using `IMG_0270.HEIC` and a stubbed Open Food Facts response.
 
+## Test workflow runner
+
+The `Test` workflow uses an online, idle repository runner labeled `self-hosted`, `macOS`, and `ARM64` for owner-triggered manual runs and owner-authored pull requests from this repository. Other runs use GitHub-hosted `macos-15`, as do runs when the runner is unavailable or the status check fails. The status check is not a reservation: the runner can become busy or offline before the test job starts.
+
+To enable the check, add a repository Actions secret named `RUNNER_STATUS_TOKEN` containing a fine-grained personal access token limited to this repository with **Administration: Read-only** permission. Never put the token in the workflow or share it in a pull request. The self-hosted Mac needs Xcode 16.4 (or the configured `XCODE_VERSION`), simulator runtimes, Ruby, Bundler, Python, and non-interactive permission to run the existing `sudo xcode-select` command. Self-hosted runners retain machine state between jobs; use only trusted code and protect access to the machine. GitHub recommends against using self-hosted runners with public repositories because pull requests can run dangerous code.
+
 ## Units and notation
 
 Use the same notation in the app, code comments, docs and conversation:
