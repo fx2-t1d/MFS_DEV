@@ -77,11 +77,21 @@ final class EvaluateBiometrics: ObservableObject {
 struct EvaluateView: View {
     @EnvironmentObject private var feed: GlucoseFeed
     @EnvironmentObject private var actions: DeviceActions
+    @EnvironmentObject private var profiles: InsulinProfileStore
     @StateObject private var biometrics = EvaluateBiometrics()
     @State private var enabled: Set<EvaluateSeries> = [.glucose]
     @State private var hours = 24
 
     private static let rangeHours = [6, 12, 24, 72, 168]
+
+    private var predictionRegistry: PredictionModelRegistry {
+        .standard(settings: profiles.segment(at: Date()).map(PredictionWire.Settings.init(segment:)))
+    }
+
+    private var predictionContext: ForecastContext {
+        ForecastContext(readings: feed.readings,
+                        doses: actions.insulinDoses.filter { $0.kind == .bolus }.map { DoseEvent(time: $0.start, units: $0.units) })
+    }
 
     private var domain: ClosedRange<Date> {
         let end = Date()
@@ -132,7 +142,7 @@ struct EvaluateView: View {
             }
             Section {
                 NavigationLink("Predictions") {
-                    PredictionEvaluationView(registry: PredictionModelRegistry(), context: ForecastContext(readings: feed.readings))
+                    PredictionEvaluationView(registry: predictionRegistry, context: predictionContext)
                 }
             } footer: {
                 Text("Compare a model's prediction at a chosen moment with what glucose actually did.")

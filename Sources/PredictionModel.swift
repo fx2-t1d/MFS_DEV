@@ -100,6 +100,20 @@ enum PredictionWire {
         var readings: [Reading]
         var foods: [Food]
         var doses: [Dose]
+        /// Optional therapy settings in effect at `time`, for models that need them.
+        var settings: Settings? = nil
+        /// Free-form choices for one model, e.g. which variant of a shared script to run.
+        var options: [String: String]? = nil
+    }
+
+    /// Insulin sensitivity in mg/dl per u, carb ratio in c per u, basal in u/h, target in mg/dl, insulin duration in hours.
+    struct Settings: Codable, Equatable {
+        var isf: Double?
+        var carbRatio: Double?
+        var basal: Double?
+        var target: Double?
+        var dia: Double?
+        var maxIOB: Double?
     }
 
     struct Response: Codable, Equatable {
@@ -111,14 +125,16 @@ enum PredictionWire {
         var series: [Series]?
     }
 
-    static func request(context: ForecastContext, horizon: TimeInterval, step: TimeInterval) throws -> Request {
+    static func request(context: ForecastContext, horizon: TimeInterval, step: TimeInterval,
+                        settings: Settings? = nil, options: [String: String]? = nil) throws -> Request {
         guard let latest = context.readings.map(\.date).max() else { throw PredictionError.noReadings }
         return Request(
             time: latest.timeIntervalSince1970, horizon: horizon, step: step,
             readings: context.readings.sorted { $0.date < $1.date }
                 .map { .init(t: $0.date.timeIntervalSince1970, mgdl: $0.milligramsPerDeciliter) },
             foods: context.foods.map { .init(t: $0.time.timeIntervalSince1970, carbs: $0.carbohydrates, protein: $0.protein, fat: $0.fat) },
-            doses: context.doses.map { .init(t: $0.time.timeIntervalSince1970, units: $0.units) })
+            doses: context.doses.map { .init(t: $0.time.timeIntervalSince1970, units: $0.units) },
+            settings: settings, options: options)
     }
 
     /// Decodes and validates a model's reply. Bad points are rejected, never silently drawn.
@@ -165,9 +181,11 @@ struct ScriptPredictionModel: PredictionModel {
     let id: String
     let name: String
     let transport: PredictionTransport
+    var settings: PredictionWire.Settings? = nil
+    var options: [String: String]? = nil
 
     func predict(context: ForecastContext, horizon: TimeInterval, step: TimeInterval) throws -> [PredictionSeries] {
-        let request = try PredictionWire.request(context: context, horizon: horizon, step: step)
+        let request = try PredictionWire.request(context: context, horizon: horizon, step: step, settings: settings, options: options)
         let reply = try transport.exchange(try JSONEncoder().encode(request))
         return try PredictionWire.series(from: reply)
     }

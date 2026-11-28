@@ -141,4 +141,74 @@ final class PredictionEvaluationTests: XCTestCase {
         XCTAssertThrowsError(try model.predict(context: ForecastContext(readings: readings([100, 111])), horizon: 600, step: 300))
     }
     #endif
+
+    // MARK: Axes
+
+    private func layer(_ id: String, _ kind: PredictionDataKind, _ values: [Double]) -> PredictionLayer {
+        PredictionLayer(id: id, label: id, kind: kind, style: .line, colorIndex: nil,
+                        points: values.enumerated().map { PredictionLayerPoint(date: t0.addingTimeInterval(Double($0.offset) * 300), value: $0.element) })
+    }
+
+    func testGlucoseDefaultsToTheRightAxisAndOthersToTheLeft() throws {
+        let layout = PredictionChartLayout(
+            layers: [layer("g", .glucose, [100, 200]), layer("i", .insulin, [0, 4])], config: PredictionChartConfig())
+        XCTAssertEqual(layout.right?.kinds, [.glucose])
+        XCTAssertEqual(layout.left?.kinds, [.insulin])
+    }
+
+    func testAutoScaleFitsEachSideAndFixedScaleIsHonoured() throws {
+        var config = PredictionChartConfig()
+        let layers = [layer("g", .glucose, [100, 200]), layer("i", .insulin, [0, 4])]
+        let auto = try XCTUnwrap(PredictionChartLayout(layers: layers, config: config).right)
+        XCTAssertLessThan(auto.low, 100)
+        XCTAssertGreaterThan(auto.high, 200)
+
+        config.right = .fixed(low: 50, high: 250)
+        let fixed = try XCTUnwrap(PredictionChartLayout(layers: layers, config: config).right)
+        XCTAssertEqual(fixed.normalized(150), 0.5)
+        XCTAssertEqual(fixed.normalized(500), 1, "values past a fixed range are clamped to the edge")
+    }
+
+    func testMovingADataTypeMovesItsAxis() {
+        var config = PredictionChartConfig()
+        config.sides[.insulin] = .right
+        let layout = PredictionChartLayout(layers: [layer("g", .glucose, [100]), layer("i", .insulin, [2])], config: config)
+        XCTAssertNil(layout.left)
+        XCTAssertEqual(layout.right?.kinds, [.glucose, .insulin])
+    }
+
+    func testFlatAndEmptyDataStillGetUsableAxes() {
+        let flat = PredictionAxis.make(range: .auto, values: [120, 120], kinds: [.glucose])
+        XCTAssertLessThan(flat.low, flat.high)
+        let empty = PredictionAxis.make(range: .auto, values: [], kinds: [.glucose])
+        XCTAssertEqual(empty.normalized(0.5), 0.5)
+        let backwards = PredictionAxis.make(range: .fixed(low: 300, high: 40), values: [], kinds: [.glucose])
+        XCTAssertEqual(backwards.low, 40)
+    }
+
+    func testTicksAreRoundAndInsideTheRange() {
+        XCTAssertEqual(PredictionAxis.niceTicks(low: 40, high: 300), [50, 100, 150, 200, 250, 300])
+    }
+
+    func testLayersCombineSelectedModelsAndCarryDoses() {
+        let all = readings([100, 100, 110, 130])
+        let context = ForecastContext(readings: all, foods: [FoodEvent(time: t0, carbohydrates: 30, protein: nil, fat: nil)],
+                                      doses: [DoseEvent(time: t0, units: 2)])
+        let time = t0.addingTimeInterval(300)
+        let evaluations = [
+            (name: "A", evaluation: PredictionEvaluator.evaluate(model: ForecasterPredictionModel(id: "a", name: "A"), at: time, context: context)),
+            (name: "B", evaluation: PredictionEvaluator.evaluate(model: ForecasterPredictionModel(id: "b", name: "B"), at: time, context: context)),
+        ]
+        let layers = PredictionLayers.make(evaluations: evaluations, context: context, horizon: 7200)
+        XCTAssertEqual(layers.map(\.id), ["known", "actual", "a/A", "b/B", "insulin", "carbohydrates"])
+        XCTAssertEqual(layers.compactMap(\.colorIndex), [0, 1])
+    }
+
+    func testChartConfigSurvivesEncoding() throws {
+        var config = PredictionChartConfig()
+        config.sides[.insulin] = .right
+        config.left = .fixed(low: 0, high: 12)
+        config.selectedModelIDs = ["oref1"]
+        XCTAssertEqual(try JSONDecoder().decode(PredictionChartConfig.self, from: JSONEncoder().encode(config)), config)
+    }
 }

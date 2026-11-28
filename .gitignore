@@ -12,3 +12,6 @@ vendor/
 artifacts/
 buildlog/
 new_certificate_needed.txt
+tools/oref/.build/
+tools/oref/node_modules/
+tools/oref/package-lock.json

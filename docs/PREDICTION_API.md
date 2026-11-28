@@ -36,11 +36,13 @@ Other transports (a remote service, for example) only implement `exchange(_ requ
   "step": 300,
   "readings": [{ "t": 1700000000, "mgdl": 100 }],
   "foods": [{ "t": 1700000100, "carbs": 30, "protein": 10, "fat": 5 }],
-  "doses": [{ "t": 1700000000, "units": 2 }]
+  "doses": [{ "t": 1700000000, "units": 2 }],
+  "settings": { "isf": 50, "carbRatio": 10, "basal": 1, "target": 100, "dia": 6 },
+  "options": { "variant": "oref1" }
 }
 ```
 
-`time` is the latest reading: the moment predicted from. Readings are in ascending order. Food `carbs`, `protein` and `fat` are grams and may be null. No data after `time` is ever sent.
+`time` is the latest reading: the moment predicted from. Readings are in ascending order. Food `carbs`, `protein` and `fat` are grams and may be null. No data after `time` is ever sent. `settings` (optional) are the therapy settings in effect at `time`: `isf` in mg/dl per u, `carbRatio` in c per u, `basal` in u/h, `target` in mg/dl, `dia` in hours, `maxIOB` in u; any may be absent. `options` (optional) are free-form strings configured by whoever registers the model, so one script can serve several models.
 
 ### Response (version 1)
 
@@ -69,6 +71,15 @@ function predict(requestJSON) {
 }
 ```
 
-### Adapting oref0 / oref1
+## oref0 and oref1
 
-The oref0 `determine-basal` code takes IOB, current temp basal, glucose, profile, autosens and meal data and returns `predBGs` (`IOB`, `COB`, `UAM`, `ZT`). An adapter script converts this request into those inputs and each `predBGs` array into a series (5-minute steps starting at `time + step`). oref0 and oref1 differ by profile settings (`enableSMB_*`, `enableUAM`), so they are two registrations of one adapter with different settings.
+Both are built in (`Sources/OrefPredictionModels.swift`). They run [openaps/oref0](https://github.com/openaps/oref0) (MIT, see `tools/oref/OREF0_LICENSE.txt`) unchanged through `JavaScriptPredictionTransport`, using `tools/oref/adapter.js`, which converts this API to oref's inputs and `predBGs` to curves `IOB`, `COB`, `UAM` and `ZT`. The two differ only by `options.variant`: `oref0` has no SMB or unannounced-meal detection; `oref1` enables both.
+
+- The script is `Sources/Resources/oref.bundle.js`, built by `tools/oref/build.sh` (needs node and git; pinned to one oref0 commit). Check it with `node tools/oref/test.js`. To update oref0, change `OREF0_COMMIT` in `build.sh`, rebuild and commit the bundle.
+- Settings come from the active insulin profile. Missing values fall back to oref defaults, so set sensitivity, carb ratio, basal and target for meaningful results.
+- Current limits: temp basal and carbs history are not passed (only boluses and the current meal), and autosens is off (ratio 1). oref reports an error for perfectly flat glucose, and that error is shown.
+- Predictions are what oref's determine-basal computes; no dosing decision from oref is used or shown.
+
+## Chart axes
+
+The chart has a left and a right y axis. Each data type (glucose, insulin, carbohydrates) is assigned to a side, glucose on the right by default. Each side is scaled automatically from the data shown on it, or fixed to a minimum and maximum. The Models menu in the toolbar chooses which registered models are drawn together; the Axes button opens the axis settings. Choices are saved on the device.

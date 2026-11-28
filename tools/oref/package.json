@@ -1,0 +1,10 @@
+{
+  "name": "mfs-oref-bundle",
+  "private": true,
+  "description": "Build tooling for the bundled oref0/oref1 prediction model",
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1"
+  }
+}
