@@ -109,3 +109,7 @@ Connect devices > Sensors > FreeStyle Libre 3 > Troubleshooting shows the paired
 ## Predictions and models
 
 Evaluate > Predictions compares what swappable models predicted at a chosen moment with what glucose did, on a dual-axis chart. Models: Descartes1 (latest reading plus the dose formula's food effect), Flat, and the bundled Oref0 and Oref1 (`tools/oref`, MIT). Contract, build steps and limits: [docs/PREDICTION_API.md](docs/PREDICTION_API.md).
+
+## Dose log
+
+Manage > Accepted food > **Log dose** locks the whole accepted meal (items, totals, photo) together with what was shown at that moment (glucose, active insulin profile, dosing tab, recommended bolus and enhanced basal, the formula) into the dose log, after a confirmation. Entries cannot be edited; view them from the Manage menu > Dose log. Logging sends nothing to a pump; later steps for bolus and basal will attach to the entry.

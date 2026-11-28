@@ -29,6 +29,7 @@ struct MFSApp: App {
     @StateObject private var serviceStore = ServiceConnectionStore()
     @StateObject private var formulaStore = DoseFormulaStore()
     @StateObject private var dosingStore = DosingStore()
+    @StateObject private var doseLogStore = DoseLogStore()
     @StateObject private var biometricStream = BiometricStream(read: { kinds, state in
         try await HealthBiometricReader().read(kinds: kinds, state: state)
     })
@@ -108,6 +109,7 @@ struct MFSApp: App {
             .environmentObject(foodStore)
             .environmentObject(formulaStore)
             .environmentObject(dosingStore)
+            .environmentObject(doseLogStore)
             .environmentObject(profileStore)
             .environmentObject(serviceStore)
             .environmentObject(biometricStream)
@@ -194,6 +196,14 @@ private struct ManageView: View {
     @State private var showProfiles = false
     @State private var showServices = false
     @State private var showStream = false
+    @State private var showLog = false
+    @State private var confirmLog = false
+    @EnvironmentObject private var doseLog: DoseLogStore
+    @EnvironmentObject private var dosing: DosingStore
+    @EnvironmentObject private var formulaStore: DoseFormulaStore
+    @EnvironmentObject private var profileStore: InsulinProfileStore
+    @EnvironmentObject private var feed: GlucoseFeed
+    @EnvironmentObject private var actions: DeviceActions
 
     var body: some View {
         List {
@@ -213,6 +223,8 @@ private struct ManageView: View {
                         LabeledContent("Servings", value: food.servings.formatted())
                     }
                     MacroPieChart(food: food)
+                    Button(store.meal?.id == doseLog.lastLoggedMealID ? "Logged" : "Log dose", systemImage: "lock.doc") { confirmLog = true }
+                        .disabled(store.meal == nil || store.meal?.id == doseLog.lastLoggedMealID)
                     LabeledContent("Total carbs", value: gramsText(food.totalCarbohydrates, unit: "c"))
                     LabeledContent("Net carbs", value: gramsText(food.netCarbohydrates, unit: "c"))
                     LabeledContent("Protein", value: gramsText(food.totalProtein, unit: "p"))
@@ -240,6 +252,7 @@ private struct ManageView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    Button("Dose log") { showLog = true }
                     Button("Connect devices") { showDevices = true }
                     Button("Insulin profiles") { showProfiles = true }
                     Button("Service connections") { showServices = true }
@@ -250,10 +263,28 @@ private struct ManageView: View {
                 }
             }
         }
+        .confirmationDialog("Lock this meal and the numbers shown into the dose log?", isPresented: $confirmLog, titleVisibility: .visible) {
+            Button("Log dose") { logMeal() }
+        } message: {
+            Text("The entry cannot be edited. Nothing is sent to a pump.")
+        }
+        .sheet(isPresented: $showLog) { DoseLogView() }
         .sheet(isPresented: $showDevices) { ConnectDevicesView() }
         .sheet(isPresented: $showProfiles) { InsulinProfilesView() }
         .sheet(isPresented: $showServices) { ServiceConnectionsView() }
         .sheet(isPresented: $showStream) { BiometricStreamView() }
+    }
+}
+
+extension ManageView {
+    fileprivate func logMeal() {
+        guard let meal = store.meal else { return }
+        let glucose = feed.readings.last
+        let recommendation = DosingSummary.recommendation(
+            mode: dosing.mode, food: meal.combined, formula: formulaStore.formula, profiles: profileStore,
+            dosing: dosing, glucose: glucose, iob: RecordedInsulinOnBoard(doses: actions.insulinDoses))
+        doseLog.log(meal: meal, mealTime: store.mealTime ?? Date(), glucose: glucose?.milligramsPerDeciliter,
+                    profileName: profileStore.active.name, recommendation: recommendation, formula: formulaStore.formula)
     }
 }
 
