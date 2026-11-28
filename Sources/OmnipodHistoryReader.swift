@@ -85,10 +85,12 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
     // MARK: PumpManagerOnboardingDelegate
 
     @MainActor func pumpManagerOnboarding(didCreatePumpManager pumpManager: PumpManagerUI) {
+        DiagnosticsLog.shared.record("Omnipod", "Pump manager created")
         if let created = pumpManager as? OmniPumpManager { adopt(created) }
     }
 
     @MainActor func pumpManagerOnboarding(didOnboardPumpManager pumpManager: PumpManagerUI) {
+        DiagnosticsLog.shared.record("Omnipod", "Pump manager onboarded")
         if let created = pumpManager as? OmniPumpManager { adopt(created) }
     }
 
@@ -118,10 +120,12 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
     }
 
     func pumpManager(_ pumpManager: PumpManager, didError error: PumpManagerError) async {
+        DiagnosticsLog.shared.record("Omnipod", "Pump error: \(error)")
         await MainActor.run { self.lastError = error.localizedDescription }
     }
 
     func pumpManagerDidUpdateState(_ pumpManager: PumpManager) async {
+        DiagnosticsLog.shared.record("Omnipod", "State updated")
         store.save(pumpManager.rawState)
         await MainActor.run { self.refreshSummary() }
     }
@@ -165,12 +169,18 @@ final class OmnipodHistoryReader: NSObject, ObservableObject, PumpManagerDelegat
     // MARK: DeviceManagerDelegate
 
     func deviceManager(_ manager: DeviceManager, logEventForDeviceIdentifier deviceIdentifier: String?, type: DeviceLogEntryType, message: String, completion: ((Error?) -> Void)?) {
+        DiagnosticsLog.shared.record("Omnipod", "Pod log (\(type)): \(message)")
         completion?(nil)
     }
 
-    @MainActor func issueAlert(_ alert: Alert) async {}
+    @MainActor func issueAlert(_ alert: Alert) async {
+        let content = alert.foregroundContent ?? alert.backgroundContent
+        DiagnosticsLog.shared.record("Omnipod", "Alert issued \(alert.identifier.alertIdentifier): \(content.title) - \(content.body)")
+    }
 
-    @MainActor func retractAlert(identifier: Alert.Identifier) async {}
+    @MainActor func retractAlert(identifier: Alert.Identifier) async {
+        DiagnosticsLog.shared.record("Omnipod", "Alert retracted \(identifier.alertIdentifier)")
+    }
 
     func doesIssuedAlertExist(identifier: Alert.Identifier) async throws -> Bool { false }
 
