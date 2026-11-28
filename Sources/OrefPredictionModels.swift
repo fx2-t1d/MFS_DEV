@@ -40,9 +40,9 @@ extension PredictionWire.Settings {
 }
 
 extension PredictionModelRegistry {
-    /// The app's own model (Descartes1) plus Oref0 and Oref1.
-    static func standard(settings: PredictionWire.Settings?, bundle: Bundle = .main) -> PredictionModelRegistry {
-        PredictionModelRegistry(models: [ForecasterPredictionModel(id: "descartes1", name: "Descartes1")]
+    /// Descartes1 (the toy dose formula), the flat baseline, Oref0 and Oref1.
+    static func standard(settings: PredictionWire.Settings?, formula: DoseFormula = DoseFormula(), bundle: Bundle = .main) -> PredictionModelRegistry {
+        PredictionModelRegistry(models: [ForecasterPredictionModel.descartes1(formula: formula), ForecasterPredictionModel.flat]
             + OrefPredictionModels.models(settings: settings, bundle: bundle))
     }
 }

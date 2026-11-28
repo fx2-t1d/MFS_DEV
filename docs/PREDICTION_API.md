@@ -71,6 +71,11 @@ function predict(requestJSON) {
 }
 ```
 
+## Built-in app models
+
+- **Descartes1** (`Sources/DescartesModel.swift`): the latest reading plus the food effect from the toy dose formula (`docs/DOSE_FORMULA.md`, using your saved factors). B(t) is read as mg/dl of rise per minute, so the effect is its running total; rise before the latest reading is already in that reading. Fiber is not passed, and insulin has no effect yet.
+- **Flat**: the latest reading held flat (the original placeholder).
+
 ## oref0 and oref1
 
 Both are built in (`Sources/OrefPredictionModels.swift`). They run [openaps/oref0](https://github.com/openaps/oref0) (MIT, see `tools/oref/OREF0_LICENSE.txt`) unchanged through `JavaScriptPredictionTransport`, using `tools/oref/adapter.js`, which converts this API to oref's inputs and `predBGs` to curves `IOB`, `COB`, `UAM` and `ZT`. The two differ only by `options.variant`: `oref0` has no SMB or unannounced-meal detection; `oref1` enables both.

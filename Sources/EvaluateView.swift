@@ -79,6 +79,7 @@ struct EvaluateView: View {
     @EnvironmentObject private var actions: DeviceActions
     @EnvironmentObject private var profiles: InsulinProfileStore
     @EnvironmentObject private var foodStore: AcceptedFoodStore
+    @EnvironmentObject private var formulaStore: DoseFormulaStore
     @StateObject private var biometrics = EvaluateBiometrics()
     @State private var enabled: Set<EvaluateSeries> = [.glucose]
     @State private var hours = 24
@@ -86,7 +87,8 @@ struct EvaluateView: View {
     private static let rangeHours = [6, 12, 24, 72, 168]
 
     private var predictionRegistry: PredictionModelRegistry {
-        .standard(settings: profiles.segment(at: Date()).map(PredictionWire.Settings.init(segment:)))
+        .standard(settings: profiles.segment(at: Date()).map(PredictionWire.Settings.init(segment:)),
+                  formula: formulaStore.formula)
     }
 
     private var predictionContext: ForecastContext {

@@ -211,4 +211,26 @@ final class PredictionEvaluationTests: XCTestCase {
         config.selectedModelIDs = ["oref1"]
         XCTAssertEqual(try JSONDecoder().decode(PredictionChartConfig.self, from: JSONEncoder().encode(config)), config)
     }
+
+    func testDescartes1RaisesTheForecastForFoodEnteredNowAndFlatDoesNot() throws {
+        let data = readings([100, 100, 100])
+        let now = data.last!.date
+        let food = FoodEvent(time: now, carbohydrates: 40, protein: 10, fat: 0)
+        let context = ForecastContext(readings: data, foods: [food])
+        let descartes = try ForecasterPredictionModel.descartes1().predict(context: context, horizon: 7200, step: 300)[0].points
+        let flat = try ForecasterPredictionModel.flat.predict(context: context, horizon: 7200, step: 300)[0].points
+        XCTAssertEqual(descartes.first?.milligramsPerDeciliter ?? 0, 100, accuracy: 3) // a step after the reading
+        XCTAssertGreaterThan(descartes.last!.milligramsPerDeciliter, 110)
+        XCTAssertTrue(flat.allSatisfy { $0.milligramsPerDeciliter == 100 })
+    }
+
+    func testDescartes1CountsOnlyTheRiseAfterTheLatestReading() throws {
+        let data = readings([100, 100, 100])
+        let eaten = data.last!.date.addingTimeInterval(-3600)
+        let withFood = ForecastContext(readings: data, foods: [FoodEvent(time: eaten, carbohydrates: 40, protein: 0, fat: 0)])
+        let points = try ForecasterPredictionModel.descartes1().predict(context: withFood, horizon: 3600, step: 300)[0].points
+        let earlier = DescartesFoodInfluence().change(at: data.last!.date, context: withFood)
+        XCTAssertEqual(earlier, 0, accuracy: 1e-9)
+        XCTAssertGreaterThanOrEqual(points.last!.milligramsPerDeciliter, 100)
+    }
 }
