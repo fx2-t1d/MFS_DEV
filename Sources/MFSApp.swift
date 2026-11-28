@@ -194,6 +194,9 @@ private struct ManageView: View {
     @State private var showProfiles = false
     @State private var showServices = false
     @State private var showStream = false
+    @State private var showUserGuide = false
+    @State private var showDeveloperGuide = false
+    @State private var showAbout = false
 
     var body: some View {
         List {
@@ -245,6 +248,10 @@ private struct ManageView: View {
                     Button("Service connections") { showServices = true }
                     Button("Biometric stream") { showStream = true }
                     Button("Safety limits") {}.disabled(true)
+                    Divider()
+                    Button("User guide") { showUserGuide = true }
+                    Button("Developer guide") { showDeveloperGuide = true }
+                    Button("About") { showAbout = true }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -254,6 +261,9 @@ private struct ManageView: View {
         .sheet(isPresented: $showProfiles) { InsulinProfilesView() }
         .sheet(isPresented: $showServices) { ServiceConnectionsView() }
         .sheet(isPresented: $showStream) { BiometricStreamView() }
+        .sheet(isPresented: $showUserGuide) { HelpView(title: "User guide", resource: "UserGuide") }
+        .sheet(isPresented: $showDeveloperGuide) { HelpView(title: "Developer guide", resource: "DeveloperGuide") }
+        .sheet(isPresented: $showAbout) { AboutView() }
     }
 }
 

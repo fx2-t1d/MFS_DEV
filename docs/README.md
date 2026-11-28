@@ -11,3 +11,5 @@ Status reflects the repository at the time of writing; see the [project README](
 Units and notation (c for carbohydrate grams, p for protein grams, mg/dl for glucose, units or u for insulin) are defined in the [project README](../README.md#units-and-notation).
 
 Prediction visualization and model plug-in contract: [PREDICTION_API.md](PREDICTION_API.md).
+
+In-app help (Manage menu): [User guide](../Sources/Resources/UserGuide.md) and [Developer guide](../Sources/Resources/DeveloperGuide.md).
