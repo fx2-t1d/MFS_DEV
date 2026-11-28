@@ -249,7 +249,8 @@ private struct ManageView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .safeAreaInset(edge: .bottom) {
+        .scrollIndicators(.visible)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             DosingFooter(food: store.food)
         }
         .toolbar {
