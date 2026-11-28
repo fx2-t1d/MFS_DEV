@@ -126,6 +126,48 @@ final class FoodItemRecord {
     }
 }
 
+/// A label on a meal, such as "chicken" or "green beans". `kind` and `source` are free text so new kinds of tags
+/// ("ingredient", "dish", "cuisine", "occasion", ...) and new sources ("manual", "vision", "import", ...) need no schema change.
+@Model
+final class TagAssignment {
+    var groupID: UUID
+    var name: String
+    var kind: String
+    var source: String
+    /// 0...1 when a model suggested the tag; nil when a person chose it.
+    var confidence: Double?
+    var createdAt: Date
+
+    init(groupID: UUID, name: String, kind: String, source: String, confidence: Double?) {
+        self.groupID = groupID
+        self.name = name
+        self.kind = kind
+        self.source = source
+        self.confidence = confidence
+        createdAt = Date()
+    }
+}
+
+struct SuggestedTag: Equatable {
+    var name: String
+    var kind = "ingredient"
+    var confidence: Double?
+}
+
+/// Hook for anything that can look at a meal photo and name what is on the plate (an on-device classifier, a service).
+/// None is wired yet; tags are added by hand until one is.
+protocol MealTagSuggester {
+    var source: String { get }
+    func suggestTags(forPhoto jpeg: Data) async throws -> [SuggestedTag]
+}
+
+struct SimilarMeal {
+    var entry: FoodEntry
+    /// Shared tags divided by all tags on either meal, 0...1.
+    var score: Double
+    var sharedTags: [String]
+}
+
 /// What was shown when a meal was logged. Stored as the payload of a `dosingDecision` record.
 struct DosingSnapshot: Codable, Equatable {
     var glucoseMgdl: Double?
@@ -144,7 +186,7 @@ final class RecordDatabase: ObservableObject {
     var context: ModelContext { container.mainContext }
 
     init(inMemory: Bool = false) throws {
-        container = try ModelContainer(for: DataRecord.self, FoodEntry.self, FoodItemRecord.self,
+        container = try ModelContainer(for: DataRecord.self, FoodEntry.self, FoodItemRecord.self, TagAssignment.self,
                                        configurations: ModelConfiguration(isStoredInMemoryOnly: inMemory))
     }
 
@@ -209,6 +251,60 @@ final class RecordDatabase: ObservableObject {
 
     func foodEntry(group: UUID) throws -> FoodEntry? {
         try context.fetch(FetchDescriptor<FoodEntry>(predicate: #Predicate { $0.groupID == group })).first
+    }
+
+    static func normalized(_ tag: String) -> String {
+        tag.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    func tags(for group: UUID) throws -> [TagAssignment] {
+        try context.fetch(FetchDescriptor<TagAssignment>(predicate: #Predicate { $0.groupID == group },
+                                                         sortBy: [SortDescriptor(\.createdAt)]))
+    }
+
+    /// Adds a tag to a meal; a tag the meal already has is left alone.
+    @discardableResult
+    func addTag(_ name: String, kind: String = "ingredient", source: String = "manual", confidence: Double? = nil,
+                to group: UUID) throws -> TagAssignment? {
+        let name = Self.normalized(name)
+        guard !name.isEmpty else { return nil }
+        if let existing = try tags(for: group).first(where: { $0.name == name && $0.kind == kind }) { return existing }
+        let tag = TagAssignment(groupID: group, name: name, kind: kind, source: source, confidence: confidence)
+        context.insert(tag)
+        try context.save()
+        return tag
+    }
+
+    func removeTag(_ tag: TagAssignment) throws {
+        context.delete(tag)
+        try context.save()
+    }
+
+    func applySuggestions(from suggester: MealTagSuggester, to group: UUID) async throws {
+        guard let photo = try foodEntry(group: group)?.photo else { return }
+        for suggestion in try await suggester.suggestTags(forPhoto: photo) {
+            try addTag(suggestion.name, kind: suggestion.kind, source: suggester.source, confidence: suggestion.confidence, to: group)
+        }
+    }
+
+    /// Other logged meals ranked by how much of their tags they share with this one (Jaccard overlap).
+    func similarMeals(to group: UUID, limit: Int = 5) throws -> [SimilarMeal] {
+        let mine = Set(try tags(for: group).map { "\($0.kind):\($0.name)" })
+        guard !mine.isEmpty else { return [] }
+        var byGroup: [UUID: Set<String>] = [:]
+        for tag in try context.fetch(FetchDescriptor<TagAssignment>()) where tag.groupID != group {
+            byGroup[tag.groupID, default: []].insert("\(tag.kind):\(tag.name)")
+        }
+        let ranked = byGroup.compactMap { other, theirs -> (UUID, Double, [String])? in
+            let shared = mine.intersection(theirs)
+            guard !shared.isEmpty else { return nil }
+            return (other, Double(shared.count) / Double(mine.union(theirs).count), shared.sorted())
+        }
+        .sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.0.uuidString < $1.0.uuidString }
+        .prefix(limit)
+        return try ranked.compactMap { other, score, shared in
+            try foodEntry(group: other).map { SimilarMeal(entry: $0, score: score, sharedTags: shared.map { String($0.split(separator: ":", maxSplits: 1)[1]) }) }
+        }
     }
 
     /// Stores an accepted meal as a `food` record plus its FoodEntry (method, photo, items), and a `dosingDecision`

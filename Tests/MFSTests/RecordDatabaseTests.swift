@@ -55,4 +55,27 @@ final class RecordDatabaseTests: XCTestCase {
         XCTAssertEqual(try db.pendingUpload().count, TidepoolDataType.allCases.count - 3)
         XCTAssertEqual(pending[3].lastError, "offline")
     }
+
+    func testSimilarMealsRankBySharedTags() throws {
+        let db = try RecordDatabase(inMemory: true)
+        func log(_ name: String, tags: [String]) throws -> UUID {
+            let product = OpenFoodFactsProduct(barcode: "", name: name, brands: nil, servingSize: "whole meal", nutritionValues: [:],
+                                               nutrientsPer100g: [.carbohydrates: 10, .protein: 10], servingQuantity: 100, servingUnit: "g")
+            let group = try db.logMeal(AcceptedMeal(items: [AcceptedFood(product: product, servings: 1)]), mealTime: Date(), dosing: nil)
+            for tag in tags { try db.addTag(tag, to: group) }
+            return group
+        }
+        let plate = try log("Plate", tags: ["Chicken", "green beans", "bacon"])
+        _ = try log("Chicken and beans", tags: ["chicken", " Green Beans "])
+        _ = try log("Pasta", tags: ["pasta"])
+        _ = try log("Chicken only", tags: ["chicken", "rice", "salad", "soup"])
+
+        let matches = try db.similarMeals(to: plate)
+        XCTAssertEqual(matches.map(\.entry.name), ["Chicken and beans", "Chicken only"])
+        XCTAssertEqual(matches[0].score, 2.0 / 3.0, accuracy: 0.001)
+        XCTAssertEqual(matches[0].sharedTags, ["chicken", "green beans"])
+        XCTAssertEqual(try db.tags(for: plate).count, 3)
+        try db.addTag("CHICKEN", to: plate)
+        XCTAssertEqual(try db.tags(for: plate).count, 3)
+    }
 }

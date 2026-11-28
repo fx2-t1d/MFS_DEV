@@ -30,7 +30,15 @@ struct DoseLogView: View {
 
 private struct DoseLogDetail: View {
     @EnvironmentObject private var database: RecordDatabase
+    @Query private var tags: [TagAssignment]
+    @State private var newTag = ""
     let entry: FoodEntry
+
+    init(entry: FoodEntry) {
+        self.entry = entry
+        let group = entry.groupID
+        _tags = Query(filter: #Predicate<TagAssignment> { $0.groupID == group }, sort: \.createdAt)
+    }
 
     private func value(_ number: Double?, _ unit: String) -> String {
         number.map { "\($0.formatted(.number.precision(.fractionLength(0...1)))) \(unit)" } ?? "—"
@@ -43,6 +51,11 @@ private struct DoseLogDetail: View {
               let body = object["mfsSnapshot"],
               let data = try? JSONSerialization.data(withJSONObject: body) else { return nil }
         return try? JSONDecoder().decode(DosingSnapshot.self, from: data)
+    }
+
+    private func addTag() {
+        try? database.addTag(newTag, to: entry.groupID)
+        newTag = ""
     }
 
     var body: some View {
@@ -70,6 +83,28 @@ private struct DoseLogDetail: View {
                     LabeledContent("Bolus shown", value: value(snapshot.recommendedBolusUnits, "u"))
                     LabeledContent("Enhanced basal shown", value: value(snapshot.enhancedBasalUnitsPerHour, "u/h"))
                     LabeledContent("Enhanced for", value: snapshot.enhancedBasalMinutes.map { "\($0) min" } ?? "—")
+                }
+            }
+            Section("Tags") {
+                ForEach(tags) { tag in
+                    Text(tag.name)
+                        .swipeActions { Button("Remove", role: .destructive) { try? database.removeTag(tag) } }
+                }
+                HStack {
+                    TextField("Add tag, e.g. chicken", text: $newTag).onSubmit(addTag)
+                    Button("Add", action: addTag).disabled(newTag.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            let similar = (try? database.similarMeals(to: entry.groupID)) ?? []
+            if !similar.isEmpty {
+                Section("Similar meals") {
+                    ForEach(similar, id: \.entry.groupID) { match in
+                        VStack(alignment: .leading) {
+                            Text(match.entry.name).lineLimit(1)
+                            Text("\(Int(match.score * 100))% · \(match.sharedTags.joined(separator: ", "))")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
                 }
             }
             Section {} footer: { Text("Locked. Recorded numbers are what was shown; no insulin was sent from this app.") }
