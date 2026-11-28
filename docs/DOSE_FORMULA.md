@@ -4,7 +4,7 @@ Reference for the formula edited in **Manage > Dosing > Advanced: dose formula**
 
 ## What it computes
 
-`B(t)` is the modelled impact on blood glucose `t` minutes after eating, on a one-minute grid from 0 to 720 minutes. It is a toy model: its shape is chosen by hand, not fitted to data, and it is not yet used for the forecast or the bolus values.
+`B(t)` is the modelled impact on blood glucose `t` minutes after eating, on a one-minute grid from 0 to 720 minutes. It is a toy model: its shape is chosen by hand, not fitted to data, and it is not yet used for the bolus values. The Descartes1 prediction model (Evaluate > Predictions) uses it for the food effect, reading B(t) as mg/dl per minute.
 
 ## Inputs
 
@@ -125,7 +125,7 @@ The unit mismatch is open: `B(t)` is in model units per gram (see Numerics), whi
 
 - The insulin model itself: its form, factors and whether it uses the table's duration or half-life.
 - Mapping `B(t)` to mg/dl so the sum is meaningful.
-- Use of the sum in the forecast or footer.
+- Use of the sum in the Manage forecast or footer (Descartes1 uses the food term alone in Evaluate > Predictions).
 
 ## Known limits
 

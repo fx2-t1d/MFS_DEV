@@ -63,7 +63,7 @@ The scan screen has an editable Number of servings field. It defaults to the who
 
 Accept snapshots the scanned product and selected servings, prepares a local Tidepool nutrition fragment, and opens Manage, which shows name, servings, total and net carbs, protein and fat, with a pie chart of carbs, protein and fat grams. Missing source values show unavailable rather than zero. Accepted food and its draft currently live only for the app session and the latest acceptance replaces the prior one.
 
-The **Manage** tab shows glucose from the hosted Dexcom G7 manager or LibreLoop's direct FreeStyle Libre 3 integration as a line with a trend arrow and a dashed forecast. LibreLoop pairs with the sensor over NFC and BLE without using Apple Health or the official Libre app. The forecast and meal display remain as documented below. The toolbar menu has a Connect devices sheet for Dexcom, LibreLoop and Omnipod DASH. Dose formulas opens the formula editor; safety limits is still a disabled placeholder. The Evaluate tab is unchanged. **History is kept across launches and new builds:** every glucose reading (all CGMs share one feed), Omnipod history events and the diagnostics log are saved as JSON files in the app's Application Support folder (`glucose-history.json`, `pump-history.json`, `diagnostics-log.json`; `Sources/HistoryStore.swift`). The app never deletes them. They survive updates only while the bundle ID stays the same and the app is installed over the old one; deleting the app removes them.
+The **Manage** tab shows glucose from the hosted Dexcom G7 manager or LibreLoop's direct FreeStyle Libre 3 integration as a line with a trend arrow and a dashed forecast. LibreLoop pairs with the sensor over NFC and BLE without using Apple Health or the official Libre app. The forecast and meal display remain as documented below. The toolbar menu has a Connect devices sheet for Dexcom, LibreLoop and Omnipod DASH, plus Insulin profiles, Service connections, Biometric stream, User guide, Developer guide and About; Safety limits is still a disabled placeholder. The dose formula editor is under Dosing > Advanced. The Evaluate tab overlays measurements on one chart and has a Predictions section (see [docs/PREDICTION_API.md](docs/PREDICTION_API.md)). The dashed forecast on Manage is still the latest reading held flat. **History is kept across launches and new builds:** every glucose reading (all CGMs share one feed), Omnipod history events and the diagnostics log are saved as JSON files in the app's Application Support folder (`glucose-history.json`, `pump-history.json`, `diagnostics-log.json`; `Sources/HistoryStore.swift`). The app never deletes them. They survive updates only while the bundle ID stays the same and the app is installed over the old one; deleting the app removes them.
 
 
 The Tidepool extension boundary prepares nutrition JSON only, with compatibility issues retained beside it. No uploads occur. Volume-based portions remain available to Manage but are not passed as grams to the local mapper. Missing event metadata and schema gaps still apply.
@@ -74,7 +74,7 @@ Connect devices can pair a new Omnipod DASH. This is the one exception to MFS be
 
 ## Patches to submodules
 
-`patches/` holds changes applied to pinned submodules by `scripts/apply_patches.sh`, which the build and test workflows run after checkout (run it locally after `git submodule update --init`). `G7SensorKit-stelo.patch` lets the G7 manager connect to Dexcom Stelo, which advertises as `DX01`; upstream rejected it as unmerged (LoopKit/G7SensorKit#30). Stelo is community-tested only and has no alerts through MFS. Remove the patch when upstream supports Stelo.
+`scripts/apply_patches.sh` applies patches from `patches/` to pinned submodules after checkout; none are needed now, because the pinned G7SensorKit supports Dexcom Stelo (`DX01`) natively. Add an `apply` line to the script if one becomes necessary.
 
 ## Connecting devices
 
@@ -90,7 +90,7 @@ Manage > Dosing > Advanced: dose formula edits toy model two: B(t) = b + C·(s *
 
 ## Insulin profiles and service connections
 
-Manage toolbar menu:
+Manage toolbar menu (also: Connect devices, User guide, Developer guide, About):
 
 - **Insulin profiles**: one Main profile plus any number of alternatives (for example "Sick"). Each profile has time frames (6am-11am, 11am-4pm, ...), each with basal (units/hour) and sensitivity (mg/dl one unit lowers glucose). Alternatives are selected by hand with Use / Back to main and stay in effect until changed. `ProfileSwitchHook` is the extension point for automatic switching; none are registered, and a manual choice is never overridden by a hook. No default values are supplied.
 - **Service connections**: connection details only, no data format. A service has a name, https address and one of: none, shared secret in a header (Nightscout preset: `api-secret`, optionally SHA-1 hashed), bearer token, or a client certificate for mutual TLS (import a `.p12`). Secrets and certificates are stored in the Keychain.
@@ -105,3 +105,7 @@ Connect devices opens **Sensors** and **Pumps** submenus. Each device (`DeviceKi
 ## Troubleshooting
 
 Connect devices > Sensors > FreeStyle Libre 3 > Troubleshooting shows the paired sensor's saved state (pair time, first and latest reading, warm-up), counters for what reached MFS (callbacks, samples received, samples added to the chart, last result), and two logs: MFS's own (`DiagnosticsLog`, every reading result, error, status change and device-log message from the CGM manager) and LibreLoop's. Share report exports everything as text. LibreLoop also keeps a file at Documents/libreloop/log.txt. Every host built on `CGMHostBase` (G7, Libre 3) feeds the MFS log.
+
+## Predictions and models
+
+Evaluate > Predictions compares what swappable models predicted at a chosen moment with what glucose did, on a dual-axis chart. Models: Descartes1 (latest reading plus the dose formula's food effect), Flat, and the bundled Oref0 and Oref1 (`tools/oref`, MIT). Contract, build steps and limits: [docs/PREDICTION_API.md](docs/PREDICTION_API.md).
