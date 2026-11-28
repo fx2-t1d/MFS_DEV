@@ -173,14 +173,36 @@ struct OmnipodFlowView: UIViewControllerRepresentable {
     }
 }
 
+/// Like Loop, therapy settings come first and the pump's own setup screens follow. Both live in one
+/// full-screen presentation, so nothing has to be dismissed and re-presented between the two steps.
+private struct PodPairingContainer: View {
+    @ObservedObject var reader: OmnipodHistoryReader
+    @Binding var values: PodSetupValues
+    let onFinish: () -> Void
+    @State private var settings: PumpManagerSetupSettings?
+
+    var body: some View {
+        if let settings {
+            OmnipodFlowView(mode: .setup(settings), reader: reader, onFinish: onFinish)
+                .ignoresSafeArea()
+        } else {
+            PodSetupForm(values: $values, cancel: onFinish) { chosen in
+                DiagnosticsLog.shared.record("Omnipod", "Pairing started: therapy settings confirmed, opening pod setup")
+                reader.connectNew()
+                settings = chosen
+            }
+        }
+    }
+}
+
 struct OmnipodSection: View {
     @ObservedObject var reader: OmnipodHistoryReader
     @State private var values = PodSetupValues()
-    @State private var showForm = false
-    @State private var flow: OmnipodFlowView.Mode?
+    @State private var pairing = false
+    @State private var settingsFlow: OmniPumpManager?
 
     var body: some View {
-        Section("Omnipod DASH") {
+        Section("Status") {
             if let summary = reader.podSummary {
                 LabeledContent("Status", value: summary.status)
                 if let expires = summary.expiresAt {
@@ -190,39 +212,62 @@ struct OmnipodSection: View {
                     LabeledContent("Reservoir", value: "\(units.formatted(.number.precision(.fractionLength(0...1)))) U")
                 }
                 if let manager = reader.manager {
-                    Button("Pod settings and deactivation") { flow = .settings(manager) }
+                    Button("Pod settings and deactivation") { settingsFlow = manager }
                 }
             } else {
                 LabeledContent("Status", value: "No pod")
                 Text("Pairing activates a new pod from this app: pair, prime, then insert the cannula. The pod then answers only to MFS, not to the Omnipod app or Loop, and it starts delivering the basal you enter. Have a new pod and your insulin ready.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                Button("Pair a new pod") { showForm = true }
+                Button("Pair a new pod") { pairing = true }
             }
             if let error = reader.lastError {
                 Text(error).font(.footnote).foregroundStyle(.red)
             }
+            NavigationLink("Troubleshooting") { OmnipodTroubleshootingView() }
         }
-        .sheet(isPresented: $showForm) {
-            PodSetupForm(values: $values) { settings in
-                showForm = false
-                reader.connectNew()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { flow = .setup(settings) }
+        .fullScreenCover(isPresented: $pairing) {
+            PodPairingContainer(reader: reader, values: $values) { pairing = false }
+        }
+        .fullScreenCover(item: Binding(get: { settingsFlow.map(IdentifiedManager.init) }, set: { if $0 == nil { settingsFlow = nil } })) { item in
+            OmnipodFlowView(mode: .settings(item.manager), reader: reader) { settingsFlow = nil }
+                .ignoresSafeArea()
+        }
+    }
+
+    private struct IdentifiedManager: Identifiable {
+        let manager: OmniPumpManager
+        var id: ObjectIdentifier { ObjectIdentifier(manager) }
+    }
+}
+
+private struct OmnipodTroubleshootingView: View {
+    @ObservedObject private var log = DiagnosticsLog.shared
+
+    var body: some View {
+        List {
+            Section {
+                ShareLink("Share log", item: log.lines.filter { $0.contains("[Omnipod]") }.joined(separator: "\n"))
+            } footer: {
+                Text("Pod pairing messages, including pod communication logged by the pump kit, with the error that stopped a step.")
+            }
+            Section("Omnipod log") {
+                let lines = log.lines.filter { $0.contains("[Omnipod]") }
+                if lines.isEmpty { Text("Nothing logged yet.").font(.footnote).foregroundStyle(.secondary) }
+                ForEach(Array(lines.suffix(150).reversed().enumerated()), id: \.offset) { _, line in
+                    Text(line).font(.system(size: 10, design: .monospaced)).textSelection(.enabled)
+                }
             }
         }
-        .fullScreenCover(isPresented: Binding(get: { flow != nil }, set: { if !$0 { flow = nil } })) {
-            if let mode = flow {
-                OmnipodFlowView(mode: mode, reader: reader) { flow = nil }
-                    .ignoresSafeArea()
-            }
-        }
+        .navigationTitle("Troubleshooting")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
 private struct PodSetupForm: View {
     @Binding var values: PodSetupValues
+    let cancel: () -> Void
     let start: (PumpManagerSetupSettings) -> Void
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -249,7 +294,7 @@ private struct PodSetupForm: View {
             }
             .navigationTitle("Pair a new pod")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: cancel) } }
         }
     }
 
