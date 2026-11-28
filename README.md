@@ -109,3 +109,13 @@ Connect devices > Sensors > FreeStyle Libre 3 > Troubleshooting shows the paired
 ## Predictions and models
 
 Evaluate > Predictions compares what swappable models predicted at a chosen moment with what glucose did, on a dual-axis chart. Models: Descartes1 (latest reading plus the dose formula's food effect), Flat, and the bundled Oref0 and Oref1 (`tools/oref`, MIT). Contract, build steps and limits: [docs/PREDICTION_API.md](docs/PREDICTION_API.md).
+
+## Record database
+
+`Sources/RecordDatabase.swift` is a SwiftData store (kept across app updates) for every Tidepool extended data type (`TidepoolDataType`, mirroring `datatype.v1.yaml`). Each datum is a `DataRecord` holding its upload-ready JSON plus type, time, origin, a group id and upload state (`local`, `pending`, `uploaded`, `failed`). Food adds a `FoodEntry` (entry method: barcode, table or photo; the picture; totals) with a `FoodItemRecord` per row (servings, barcode, brand, all nutrients per 100 g). Nothing is uploaded automatically.
+
+Meals carry free-form tags (`TagAssignment`: name, kind, source, confidence), so new kinds of tag and new sources need no schema change. Tags are added by hand in the dose log detail, and the detail lists similar logged meals ranked by shared tags. `MealTagSuggester` is the hook for naming what is on a plate from its photo; none is wired yet, so photo matching is not automatic.
+
+## Dose log
+
+Manage > Accepted food > **Log dose** writes the whole accepted meal into the record database, after a confirmation: a `food` record, its `FoodEntry`, and a `dosingDecision` record of what was shown (glucose, active insulin profile, dosing tab, recommended bolus and enhanced basal, the formula). Entries are not edited; view them from the Manage menu > Dose log. Logging sends nothing to a pump; later steps for bolus and basal will attach to the entry.

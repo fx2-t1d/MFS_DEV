@@ -184,6 +184,8 @@ struct DosingFooter: View {
         .padding(12)
         .frame(maxWidth: .infinity)
         .background(.bar)
+        .overlay(alignment: .top) { Rectangle().fill(Color.primary.opacity(0.35)).frame(height: 1) }
+        .shadow(color: .black.opacity(0.15), radius: 4, y: -2)
     }
 
     private var currentBasal: Double? { profileStore.segment(at: Date())?.basalUnitsPerHour }
